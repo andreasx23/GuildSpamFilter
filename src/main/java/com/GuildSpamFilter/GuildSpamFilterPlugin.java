@@ -79,13 +79,29 @@ public class GuildSpamFilterPlugin extends Plugin
         }
         else if (config.filterRaidDrop() && message.contains("received special loot"))
         {
-            log.info("New raid loot detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            log.info("New raid loot detected..");
+            var index = message.indexOf("(") + 1;
+            var index2 = message.indexOf(")");
+            var part = message.substring(index, index2).replace(",", "").replace("coins", "").trim();
+            var gpValue = Long.parseLong(part);
+            if (gpValue < config.raidLootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
+            {
+                log.info("Raid loot was below threshold: " + gpValue + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
         }
         else if (config.filterRegularDrops() && message.contains("received a drop"))
         {
-            log.info("New drop detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            log.info("New drop detected..");
+            var index = message.indexOf("(") + 1;
+            var index2 = message.indexOf(")");
+            var part = message.substring(index, index2).replace(",", "").replace("coins", "").trim();
+            var gpValue = Long.parseLong(part);
+            if (gpValue < config.lootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
+            {
+                log.info("Loot was below threshold: " + gpValue + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
         }
         else if (config.filterPets() && (message.contains("has a funny feeling") || message.contains("acquired something special")))
         {
@@ -94,8 +110,15 @@ public class GuildSpamFilterPlugin extends Plugin
         }
         else if (config.filterTotalLevelMilestone() && message.contains("has reached"))
         {
-            log.info("New level up detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            log.info("New level up detected..");
+            var index = message.indexOf("level") + 6;
+            var part = message.substring(index, message.length() - 1);
+            var level = Long.parseLong(part);
+            if (level < config.levelThreshold())
+            {
+                log.info("Level was below threshold: " + level + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
         }
         else if (config.filterCollectionLog() && message.contains("received new collection"))
         {
@@ -117,6 +140,54 @@ public class GuildSpamFilterPlugin extends Plugin
             log.info("New clan member detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
+        else if (config.filterXpMilestone() && message.contains("XP in"))
+        {
+            log.info("New XP milestone detected..");
+            var index = message.indexOf("reached") + 8;
+            var index2 = message.indexOf("XP in") - 1;
+            var part = message.substring(index, index2).replace(",", "");
+            var xp = Long.parseLong(part);
+            if (xp < config.xpMilestoneThreshold())
+            {
+                log.info("XP milestone was below threshold: " + xp + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
+        }
+        else if (config.filterDefaultMessage() && message.contains("To talk in your"))
+        {
+            log.info("New default message detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
+//        else if (config.filterQuestComplete() && message.contains("XP in")) // I need the correct text to filter by
+//        {
+//            log.info("New quest completion detected removing it..");
+//            intStack[intStackSize - 3] = 0;
+//        }
+//        else if (config.filterAchievementDiaries() && message.contains("XP in")) // I need the correct text to filter by
+//        {
+//            log.info("New achievement diaries detected removing it..");
+//            intStack[intStackSize - 3] = 0;
+//        }
+//        else if (config.filterHardcoreDeath() && message.contains("XP in")) // I need the correct text to filter by
+//        {
+//            log.info("New hardcore death detected removing it..");
+//            intStack[intStackSize - 3] = 0;
+//        }
+//        else if (config.filterPlayerDied() && message.contains("has died")) // I need the correct text to filter by
+//        {
+//            log.info("New hardcore death detected removing it..");
+//            intStack[intStackSize - 3] = 0;
+//        }
+//        else if (config.filterPlayerKill() && message.contains("has killed")) // I need the correct text to filter by
+//        {
+//            log.info("New hardcore death detected removing it..");
+//            intStack[intStackSize - 3] = 0;
+//        }
+//        else if (config.filterMemberLeftClan() && message.contains("has left")) // I need the correct text to filter by
+//        {
+//            log.info("New members who left the clan detected removing it..");
+//            intStack[intStackSize - 3] = 0;
+//        }
         stringStack[stringStackSize - 1] = message;
     }
 }
