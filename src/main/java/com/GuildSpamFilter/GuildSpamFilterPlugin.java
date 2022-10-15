@@ -13,7 +13,7 @@ import javax.inject.Inject;
 import java.util.HashSet;
 
 /*
-   Shoutout to Spam Filter for giving me a baseline on how to implement this
+   Shout out to Spam Filter for giving me a baseline on how to implement this simple Clan (broadcast) Spam Filter
    https://github.com/jackriccomini/spamfilter-plugin-runelite/blob/846413d594416195047e5d2ea233dce7a12fd85c/src/main/java/com/jackriccomini/spamfilter/SpamFilterPlugin.java
 */
 

@@ -173,7 +173,7 @@ public interface GuildSpamFilterConfig extends Config
     )
     default int raidLootGpThreshold()
     {
-        return 2147483647;
+        return Integer.MAX_VALUE;
     }
 
     @ConfigItem(
@@ -197,7 +197,7 @@ public interface GuildSpamFilterConfig extends Config
     )
     default int lootGpThreshold()
     {
-        return 2147483647;
+        return Integer.MAX_VALUE;
     }
 
     // Skilling
@@ -258,7 +258,7 @@ public interface GuildSpamFilterConfig extends Config
     )
     default int xpMilestoneThreshold()
     {
-        return 2147483647;
+        return Integer.MAX_VALUE;
     }
 
     // PvP
