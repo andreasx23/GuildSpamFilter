@@ -120,7 +120,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (config.filterCollectionLog() && message.contains("received new collection"))
+        else if (config.filterCollectionLog() && message.contains("a new collection log"))
         {
             log.info("New collection log item detected removing it..");
             intStack[intStackSize - 3] = 0;
@@ -158,11 +158,16 @@ public class GuildSpamFilterPlugin extends Plugin
             log.info("New default message detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
-//        else if (config.filterQuestComplete() && message.contains("XP in")) // I need the correct text to filter by
-//        {
-//            log.info("New quest completion detected removing it..");
-//            intStack[intStackSize - 3] = 0;
-//        }
+        else if (config.filterRareDrops() && message.contains("received a rare drop"))
+        {
+            log.info("New rare drop detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
+        else if (config.filterQuestComplete() && message.contains("has completed a quest"))
+        {
+            log.info("New quest completion detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
 //        else if (config.filterAchievementDiaries() && message.contains("XP in")) // I need the correct text to filter by
 //        {
 //            log.info("New achievement diaries detected removing it..");

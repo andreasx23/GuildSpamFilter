@@ -104,8 +104,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Quest Complete",
             description = "Removes Quest Completions from clan broadcast",
             section = filterSectionGeneral,
-            position = 5,
-            hidden = true
+            position = 5
     )
     default boolean filterQuestComplete()
     {
@@ -141,10 +140,9 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "filterDefaultMessage",
             name = "Filter Default Message",
-            description = "Removes the default message when joining a clan from clan broadcast",
+            description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 8,
-            hidden = true
+            position = 8
     )
     default boolean filterDefaultMessage()
     {
@@ -198,6 +196,18 @@ public interface GuildSpamFilterConfig extends Config
     default int lootGpThreshold()
     {
         return Integer.MAX_VALUE;
+    }
+
+    @ConfigItem(
+            keyName = "filterRareDrops",
+            name = "Filter Rare Drops",
+            description = "Removes Rare Drops from clan broadcast",
+            section = filterSectionPvm,
+            position = 2
+    )
+    default boolean filterRareDrops()
+    {
+        return false;
     }
 
     // Skilling
