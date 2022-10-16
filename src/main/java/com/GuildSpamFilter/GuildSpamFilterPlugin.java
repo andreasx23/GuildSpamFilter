@@ -80,10 +80,10 @@ public class GuildSpamFilterPlugin extends Plugin
         else if (config.filterRaidDrop() && message.contains("received special loot"))
         {
             log.info("New raid loot detected..");
-            var index = message.indexOf("(") + 1;
-            var index2 = message.indexOf(")");
-            var part = message.substring(index, index2).replace(",", "").replace("coins", "").trim();
-            var gpValue = Long.parseLong(part);
+            int index = message.indexOf("(") + 1;
+            int index2 = message.indexOf(")");
+            String part = message.substring(index, index2).replace(",", "").replace("coins", "").trim();
+            long gpValue = Long.parseLong(part);
             if (gpValue < config.raidLootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
             {
                 log.info("Raid loot was below threshold: " + gpValue + " removing it..");
@@ -93,10 +93,10 @@ public class GuildSpamFilterPlugin extends Plugin
         else if (config.filterRegularDrops() && message.contains("received a drop"))
         {
             log.info("New drop detected..");
-            var index = message.indexOf("(") + 1;
-            var index2 = message.indexOf(")");
-            var part = message.substring(index, index2).replace(",", "").replace("coins", "").trim();
-            var gpValue = Long.parseLong(part);
+            int index = message.indexOf("(") + 1;
+            int index2 = message.indexOf(")");
+            String part = message.substring(index, index2).replace(",", "").replace("coins", "").trim();
+            long gpValue = Long.parseLong(part);
             if (gpValue < config.lootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
             {
                 log.info("Loot was below threshold: " + gpValue + " removing it..");
@@ -111,9 +111,9 @@ public class GuildSpamFilterPlugin extends Plugin
         else if (config.filterTotalLevelMilestone() && message.contains("has reached"))
         {
             log.info("New level up detected..");
-            var index = message.indexOf("level") + 6;
-            var part = message.substring(index, message.length() - 1);
-            var level = Long.parseLong(part);
+            int index = message.indexOf("level") + 6;
+            String part = message.substring(index, message.length() - 1);
+            long level = Long.parseLong(part);
             if (level < config.levelThreshold())
             {
                 log.info("Level was below threshold: " + level + " removing it..");
@@ -143,10 +143,10 @@ public class GuildSpamFilterPlugin extends Plugin
         else if (config.filterXpMilestone() && message.contains("XP in"))
         {
             log.info("New XP milestone detected..");
-            var index = message.indexOf("reached") + 8;
-            var index2 = message.indexOf("XP in") - 1;
-            var part = message.substring(index, index2).replace(",", "");
-            var xp = Long.parseLong(part);
+            int index = message.indexOf("reached") + 8;
+            int index2 = message.indexOf("XP in") - 1;
+            String part = message.substring(index, index2).replace(",", "");
+            long xp = Long.parseLong(part);
             if (xp < config.xpMilestoneThreshold())
             {
                 log.info("XP milestone was below threshold: " + xp + " removing it..");
