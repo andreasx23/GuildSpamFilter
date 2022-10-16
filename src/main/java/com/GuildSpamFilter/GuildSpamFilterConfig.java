@@ -1,5 +1,7 @@
 package com.GuildSpamFilter;
 
+import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
+import com.GuildSpamFilter.Configs.CombatDiariesEnum;
 import net.runelite.client.config.*;
 
 @ConfigGroup("GuildSpamFilter")
@@ -116,12 +118,49 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Achievement Diaries",
             description = "Removes Achievement Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 6,
-            hidden = true
+            position = 6
     )
     default boolean filterAchievementDiaries()
     {
         return false;
+    }
+
+
+    @ConfigItem(
+            keyName = "achievementDiariesThreshold",
+            name = "Achievement Diaries Threshold",
+            description = "Set minimum Achievement Diary threshold to filter broadcasts (Default: All)",
+            section = filterSectionGeneral,
+            position = 7
+    )
+    default AchievementDiariesEnum achievementDiariesThreshold()
+    {
+        return AchievementDiariesEnum.ALL;
+    }
+
+    @ConfigItem(
+            keyName = "filterCombatDiaries",
+            name = "Filter Combat Diaries",
+            description = "Removes Combat Diaries from clan broadcast",
+            section = filterSectionGeneral,
+            position = 8
+    )
+    default boolean filterCombatDiaries()
+    {
+        return false;
+    }
+
+
+    @ConfigItem(
+            keyName = "combatDiariesThreshold",
+            name = "Combat Diaries Threshold",
+            description = "Set minimum Combat Diary threshold to filter broadcasts (Default: All)",
+            section = filterSectionGeneral,
+            position = 9
+    )
+    default CombatDiariesEnum combatDiariesThreshold()
+    {
+        return CombatDiariesEnum.ALL;
     }
 
     @ConfigItem(
@@ -129,7 +168,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Hardcore Deaths from clan broadcast",
             section = filterSectionGeneral,
-            position = 7,
+            position = 10,
             hidden = true
     )
     default boolean filterHardcoreDeath()
@@ -142,7 +181,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Default Message",
             description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 8
+            position = 11
     )
     default boolean filterDefaultMessage()
     {
