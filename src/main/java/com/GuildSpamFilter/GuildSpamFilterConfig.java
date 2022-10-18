@@ -263,11 +263,23 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "totalLevelThreshold",
+            name = "Total Level Threshold",
+            description = "Set minimum Total Level threshold to filter broadcasts (Default: 2278)",
+            section = filterSectionSkilling,
+            position = 1
+    )
+    default int totalLevelThreshold()
+    {
+        return 2278;
+    }
+
+    @ConfigItem(
             keyName = "filterLevelUp",
             name = "Filter Level Ups",
             description = "Removes Level Ups from clan broadcast",
             section = filterSectionSkilling,
-            position = 1
+            position = 2
     )
     default boolean filterLevelUp()
     {
@@ -279,7 +291,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Level Threshold",
             description = "Set minimum Level threshold to filter broadcasts (Default: 100)",
             section = filterSectionSkilling,
-            position = 2
+            position = 3
     )
     default int levelThreshold()
     {
@@ -291,7 +303,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter XP Milestones",
             description = "Removes XP Milestones from clan broadcast",
             section = filterSectionSkilling,
-            position = 3
+            position = 4
     )
     default boolean filterXpMilestone()
     {
@@ -303,7 +315,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "XP Milestone Threshold",
             description = "Set minimum XP Milestone threshold to filter broadcasts (Default: 2,147,483,647)",
             section = filterSectionSkilling,
-            position = 4
+            position = 5
     )
     default int xpMilestoneThreshold()
     {

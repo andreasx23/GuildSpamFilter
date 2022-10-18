@@ -113,7 +113,15 @@ public class GuildSpamFilterPlugin extends Plugin
         else if (config.filterTotalLevelMilestone() && message.contains("has reached a total"))
         {
             log.info("New total level detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            String textToFind = "total level of ";
+            int index = message.indexOf(textToFind) + textToFind.length();
+            String part = message.substring(index, message.length() - 1);
+            long totalLevel = Long.parseLong(part);
+            if (totalLevel < config.totalLevelThreshold())
+            {
+                log.info("Total Level was below threshold: " + totalLevel + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
         }
         else if (config.filterLevelUp() && message.contains("has reached"))
         {
@@ -165,11 +173,11 @@ public class GuildSpamFilterPlugin extends Plugin
             log.info("New quest completion detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
-//        else if (config.filterHardcoreDeath() && message.contains("XP in")) // I need the correct text to filter by
-//        {
-//            log.info("New hardcore death detected removing it..");
-//            intStack[intStackSize - 3] = 0;
-//        }
+        else if (config.filterHardcoreDeath() && message.contains("and lost their hardcore"))
+        {
+            log.info("New hardcore death detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
 //        else if (config.filterPlayerDied() && message.contains("has died")) // I need the correct text to filter by
 //        {
 //            log.info("New hardcore death detected removing it..");
