@@ -168,8 +168,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Hardcore Deaths from clan broadcast",
             section = filterSectionGeneral,
-            position = 10,
-            hidden = true
+            position = 10
     )
     default boolean filterHardcoreDeath()
     {
