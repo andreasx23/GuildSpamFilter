@@ -89,11 +89,23 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "filterClanMemberKicked",
+            name = "Filter Kicked Clan Members",
+            description = "Removes Kicked Clan Members from clan broadcast",
+            section = filterSectionGeneral,
+            position = 4
+    )
+    default boolean filterClanMemberKicked()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "filterMemberLeftClan",
             name = "Filter Members Who Leave",
             description = "Removes Members Who Leave from clan broadcast",
             section = filterSectionGeneral,
-            position = 4,
+            position = 5,
             hidden = true
     )
     default boolean filterMemberLeftClan()
@@ -106,7 +118,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Quest Complete",
             description = "Removes Quest Completions from clan broadcast",
             section = filterSectionGeneral,
-            position = 5
+            position = 6
     )
     default boolean filterQuestComplete()
     {
@@ -118,7 +130,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Achievement Diaries",
             description = "Removes Achievement Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 6
+            position = 7
     )
     default boolean filterAchievementDiaries()
     {
@@ -131,7 +143,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Achievement Diaries Threshold",
             description = "Set minimum Achievement Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 7
+            position = 8
     )
     default AchievementDiariesEnum achievementDiariesThreshold()
     {
@@ -143,7 +155,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Combat Diaries",
             description = "Removes Combat Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 8
+            position = 9
     )
     default boolean filterCombatDiaries()
     {
@@ -156,7 +168,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Combat Diaries Threshold",
             description = "Set minimum Combat Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 9
+            position = 10
     )
     default CombatDiariesEnum combatDiariesThreshold()
     {
@@ -168,7 +180,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Hardcore Deaths from clan broadcast",
             section = filterSectionGeneral,
-            position = 10
+            position = 11
     )
     default boolean filterHardcoreDeath()
     {
@@ -180,7 +192,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Default Message",
             description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 11
+            position = 12
     )
     default boolean filterDefaultMessage()
     {

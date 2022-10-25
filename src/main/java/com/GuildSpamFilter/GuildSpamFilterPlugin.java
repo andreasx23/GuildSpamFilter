@@ -178,6 +178,11 @@ public class GuildSpamFilterPlugin extends Plugin
             log.info("New hardcore death detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
+        else if (config.filterClanMemberKicked() && message.contains("has expelled"))
+        {
+            log.info("New kicked clan member detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
 //        else if (config.filterPlayerDied() && message.contains("has died")) // I need the correct text to filter by
 //        {
 //            log.info("New hardcore death detected removing it..");
