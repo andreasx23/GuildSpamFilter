@@ -70,7 +70,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             for (String value: values)
             {
-                pbsToIncludeOrExclude.add(value.trim().toLowerCase());
+                if (value.length() > 0) pbsToIncludeOrExclude.add(value.trim().toLowerCase());
             }
         }
         log.debug("New list: " + String.join(", ", pbsToIncludeOrExclude));
@@ -84,7 +84,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             for (String value: values)
             {
-                customFilters.add(value.trim().toLowerCase());
+                if (value.length() > 0) customFilters.add(value.trim().toLowerCase());
             }
         }
         log.debug("New list: " + String.join(", ", customFilters));
@@ -123,9 +123,10 @@ public class GuildSpamFilterPlugin extends Plugin
 
         log.debug("Broadcast message: " + message);
 
-        if (config.excludeSelf() && message.startsWith(Objects.requireNonNull(client.getLocalPlayer().getName())))
+        String playerName = Objects.requireNonNull(client.getLocalPlayer().getName());
+        if (config.excludeSelf() && message.startsWith(playerName))
         {
-            log.debug("New broadcast for own player detected skipping..");
+            log.debug("New broadcast for own player detected skipping it.. Player name was: " + playerName);
             return;
         }
 
