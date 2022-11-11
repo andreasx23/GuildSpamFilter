@@ -397,7 +397,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
-            description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' would remove these from Clan Broadcast (case insensitive)",
+            description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
             section = miscellaneous,
             position = 0
     )
