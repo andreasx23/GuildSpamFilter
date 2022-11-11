@@ -232,6 +232,18 @@ public interface GuildSpamFilterConfig extends Config
         return false;
     }
 
+    @ConfigItem(
+            keyName = "customFilters",
+            name = "Custom Filters",
+            description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
+            section = filterSectionGeneral,
+            position = 15
+    )
+    default String customFilters()
+    {
+        return "";
+    }
+
     // PvM
     @ConfigItem(
             keyName = "filterRaidDrop",
@@ -395,14 +407,14 @@ public interface GuildSpamFilterConfig extends Config
 
     // Miscellaneous
     @ConfigItem(
-            keyName = "customFilters",
-            name = "Custom Filters",
-            description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
+            keyName = "excludeSelf",
+            name = "Exclude self",
+            description = "Always allow own player broadcasts to be shown in Clan",
             section = miscellaneous,
             position = 0
     )
-    default String customFilters()
+    default boolean excludeSelf()
     {
-        return "";
+        return false;
     }
 }

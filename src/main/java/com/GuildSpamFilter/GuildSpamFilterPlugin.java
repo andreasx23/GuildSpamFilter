@@ -16,6 +16,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import javax.inject.Inject;
 import java.util.HashSet;
+import java.util.Objects;
 
 /*
    Shout out to Spam Filter for giving me a baseline on how to implement this simple Clan (broadcast) Spam Filter
@@ -121,6 +122,12 @@ public class GuildSpamFilterPlugin extends Plugin
         String message = stringStack[stringStackSize - 1];
 
         log.debug("Broadcast message: " + message);
+
+        if (config.excludeSelf() && message.startsWith(Objects.requireNonNull(client.getLocalPlayer().getName())))
+        {
+            log.debug("New broadcast for own player detected skipping..");
+            return;
+        }
 
         if (config.filterPb() && message.contains("has achieved a new"))
         {
