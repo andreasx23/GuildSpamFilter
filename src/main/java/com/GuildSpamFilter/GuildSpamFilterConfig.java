@@ -2,6 +2,7 @@ package com.GuildSpamFilter;
 
 import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
 import com.GuildSpamFilter.Configs.CombatDiariesEnum;
+import com.GuildSpamFilter.Configs.PersonalBestEnum;
 import net.runelite.client.config.*;
 
 @ConfigGroup("GuildSpamFilter")
@@ -39,6 +40,14 @@ public interface GuildSpamFilterConfig extends Config
     )
     final String filterSectionPvp = "PvP Filters";
 
+    @ConfigSection(
+            position = 4,
+            closedByDefault = true,
+            name = "Miscellaneous",
+            description = "Miscellaneous"
+    )
+    final String miscellaneous = "Miscellaneous";
+
     // General
     @ConfigItem(
             keyName = "filterPb",
@@ -53,11 +62,35 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "pbToIncludeOrExcludeEnum",
+            name = "PB Mode",
+            description = "Set which personal best mode. Include includes all PB's except the ones matching your comma separated list. Exclude does the reverse. (Default: Exclude all except)",
+            section = filterSectionGeneral,
+            position = 1
+    )
+    default PersonalBestEnum pbToIncludeOrExcludeEnum()
+    {
+        return PersonalBestEnum.EXCLUDE_ALL_EXCEPT;
+    }
+
+    @ConfigItem(
+            keyName = "pbsToIncludeOrExclude",
+            name = "PB's to include or exclude based on PB Mode",
+            description = "Include/Exclude all except: Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' would include/exclude these PB's from Clan Broadcast (case insensitive)",
+            section = filterSectionGeneral,
+            position = 2
+    )
+    default String pbsToIncludeOrExclude()
+    {
+        return "";
+    }
+
+    @ConfigItem(
             keyName = "filterPets",
             name = "Filter Pet Drops",
             description = "Removes Pet Drops from clan broadcast",
             section = filterSectionGeneral,
-            position = 1
+            position = 3
     )
     default boolean filterPets()
     {
@@ -69,7 +102,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Collection Log Drops",
             description = "Removes Collection Log Drops from clan broadcast",
             section = filterSectionGeneral,
-            position = 2
+            position = 4
     )
     default boolean filterCollectionLog()
     {
@@ -81,7 +114,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter New Clan Members",
             description = "Removes New Clan Members from clan broadcast",
             section = filterSectionGeneral,
-            position = 3
+            position = 5
     )
     default boolean filterNewClanMember()
     {
@@ -93,7 +126,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Kicked Clan Members",
             description = "Removes Kicked Clan Members from clan broadcast",
             section = filterSectionGeneral,
-            position = 4
+            position = 6
     )
     default boolean filterClanMemberKicked()
     {
@@ -105,7 +138,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Members Who Leave",
             description = "Removes Members Who Leave from clan broadcast",
             section = filterSectionGeneral,
-            position = 5,
+            position = 7,
             hidden = true
     )
     default boolean filterMemberLeftClan()
@@ -118,7 +151,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Quest Complete",
             description = "Removes Quest Completions from clan broadcast",
             section = filterSectionGeneral,
-            position = 6
+            position = 8
     )
     default boolean filterQuestComplete()
     {
@@ -130,7 +163,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Achievement Diaries",
             description = "Removes Achievement Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 7
+            position = 9
     )
     default boolean filterAchievementDiaries()
     {
@@ -143,7 +176,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Achievement Diaries Threshold",
             description = "Set minimum Achievement Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 8
+            position = 10
     )
     default AchievementDiariesEnum achievementDiariesThreshold()
     {
@@ -155,7 +188,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Combat Diaries",
             description = "Removes Combat Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 9
+            position = 11
     )
     default boolean filterCombatDiaries()
     {
@@ -168,7 +201,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Combat Diaries Threshold",
             description = "Set minimum Combat Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 10
+            position = 12
     )
     default CombatDiariesEnum combatDiariesThreshold()
     {
@@ -180,7 +213,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Hardcore Deaths from clan broadcast",
             section = filterSectionGeneral,
-            position = 11
+            position = 13
     )
     default boolean filterHardcoreDeath()
     {
@@ -192,7 +225,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Default Message",
             description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 12
+            position = 14
     )
     default boolean filterDefaultMessage()
     {
@@ -358,5 +391,18 @@ public interface GuildSpamFilterConfig extends Config
     default boolean filterPlayerKill()
     {
         return false;
+    }
+
+    // Miscellaneous
+    @ConfigItem(
+            keyName = "customFilters",
+            name = "Custom Filters",
+            description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' would remove these from Clan Broadcast (case insensitive)",
+            section = miscellaneous,
+            position = 0
+    )
+    default String customFilters()
+    {
+        return "";
     }
 }

@@ -2,13 +2,16 @@ package com.GuildSpamFilter;
 
 import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
 import com.GuildSpamFilter.Configs.CombatDiariesEnum;
+import com.google.gson.Gson;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.Player;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import javax.inject.Inject;
@@ -31,7 +34,8 @@ public class GuildSpamFilterPlugin extends Plugin
     private Client client;
     @Inject
     private GuildSpamFilterConfig config;
-    private HashSet<String> seenMessages;
+    private HashSet<String> pbsToIncludeOrExclude;
+    private HashSet<String> customFilters;
 
     @Provides
     GuildSpamFilterConfig provideConfig(ConfigManager configManager)
@@ -42,15 +46,60 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void startUp() throws RuntimeException
     {
-        seenMessages = new HashSet<String>();
-        log.debug("Clan Spam Filter started!");
+        log.info("Clan Spam Filter started!");
+        pbsToIncludeOrExclude = new HashSet<String>();
+        customFilters = new HashSet<String>();
+        UpdatePbsToIncludeOrExclude();
+        UpdateCustomFilters();
     }
 
     @Override
     protected void shutDown()
     {
-        seenMessages = null;
-        log.debug("Clan Spam Filter stopped!");
+        log.info("Clan Spam Filter stopped!");
+        pbsToIncludeOrExclude = null;
+        customFilters = null;
+    }
+
+    private void UpdatePbsToIncludeOrExclude()
+    {
+        pbsToIncludeOrExclude.clear();
+        String[] values = config.pbsToIncludeOrExclude().split(",");
+        if (values.length > 0)
+        {
+            for (String value: values)
+            {
+                pbsToIncludeOrExclude.add(value.trim().toLowerCase());
+            }
+        }
+        log.debug("New list: " + String.join(", ", pbsToIncludeOrExclude));
+    }
+
+    private void UpdateCustomFilters()
+    {
+        customFilters.clear();
+        String[] values = config.customFilters().split(",");
+        if (values.length > 0)
+        {
+            for (String value: values)
+            {
+                customFilters.add(value.trim().toLowerCase());
+            }
+        }
+        log.debug("New list: " + String.join(", ", customFilters));
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event)
+    {
+        if (event.getKey().equals("pbsToIncludeOrExclude"))
+        {
+            UpdatePbsToIncludeOrExclude();
+        }
+        else if (event.getKey().equals("customFilters"))
+        {
+            UpdateCustomFilters();
+        }
     }
 
     @Subscribe
@@ -70,12 +119,47 @@ public class GuildSpamFilterPlugin extends Plugin
         if (chatMessageType != ChatMessageType.CLAN_MESSAGE) return;
 
         String message = stringStack[stringStackSize - 1];
-        //if (!seenMessages.add(message)) return;
 
         log.debug("Broadcast message: " + message);
 
         if (config.filterPb() && message.contains("has achieved a new"))
         {
+            if (!pbsToIncludeOrExclude.isEmpty())
+            {
+                log.debug("PBs to include or exclude was not empty. Mode was set to: " + config.pbToIncludeOrExcludeEnum());
+                String lowercaseMessage = message.toLowerCase();
+                switch (config.pbToIncludeOrExcludeEnum())
+                {
+                    case EXCLUDE_ALL_EXCEPT:
+                    {
+                        boolean found = false;
+                        for (String text: pbsToIncludeOrExclude)
+                        {
+                            if (lowercaseMessage.contains(text))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found) return;
+                        break;
+                    }
+                    case INCLUDE_ALL_EXCEPT:
+                    {
+                        boolean found = false;
+                        for (String text: pbsToIncludeOrExclude)
+                        {
+                            if (lowercaseMessage.contains(text))
+                            {
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) return;
+                        break;
+                    }
+                }
+            }
             log.debug("New pb detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
@@ -286,6 +370,26 @@ public class GuildSpamFilterPlugin extends Plugin
                     (achievementDiaryLevel.equals("Easy")))
             {
                 log.debug("Achievement Diaries Threshold was set to: " + config.achievementDiariesThreshold() + "and diary was: " + achievementDiaryLevel + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
+        }
+        else if (!customFilters.isEmpty())
+        {
+            log.debug("Custom filter was not empty scanning..");
+            String lowercaseMessage = message.toLowerCase();
+            boolean found = false;
+            for (String text: customFilters)
+            {
+                if (lowercaseMessage.contains(text))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                log.debug("Custom filter match found removing it..");
                 intStack[intStackSize - 3] = 0;
             }
         }
