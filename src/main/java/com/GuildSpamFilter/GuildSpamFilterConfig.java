@@ -408,7 +408,7 @@ public interface GuildSpamFilterConfig extends Config
     // Miscellaneous
     @ConfigItem(
             keyName = "excludeSelf",
-            name = "Exclude self",
+            name = "Always allow self",
             description = "Always allow own player broadcasts to be shown in Clan",
             section = miscellaneous,
             position = 0

@@ -123,24 +123,24 @@ public class GuildSpamFilterPlugin extends Plugin
 
         log.debug("Broadcast message: " + message);
 
-        String playerName = Objects.requireNonNull(client.getLocalPlayer().getName());
-        if (config.excludeSelf() && message.startsWith(playerName))
+        String playerName = client.getLocalPlayer().getName();
+        if (config.excludeSelf() && playerName != null && message.startsWith(playerName))
         {
-            log.debug("New broadcast for own player detected skipping it.. Player name was: " + playerName);
+            log.info("New broadcast for own player detected skipping it.. Player name was: " + playerName);
             return;
         }
 
         if (config.filterPb() && message.contains("has achieved a new"))
         {
-            if (!pbsToIncludeOrExclude.isEmpty())
+            log.debug("New PB detected.. Mode was set to: " + config.pbToIncludeOrExcludeEnum());
+            String lowercaseMessage = message.toLowerCase();
+            switch (config.pbToIncludeOrExcludeEnum())
             {
-                log.debug("PBs to include or exclude was not empty. Mode was set to: " + config.pbToIncludeOrExcludeEnum());
-                String lowercaseMessage = message.toLowerCase();
-                switch (config.pbToIncludeOrExcludeEnum())
+                case EXCLUDE_ALL_EXCEPT:
                 {
-                    case EXCLUDE_ALL_EXCEPT:
+                    boolean found = false;
+                    if (pbsToIncludeOrExclude.size() > 0)
                     {
-                        boolean found = false;
                         for (String text: pbsToIncludeOrExclude)
                         {
                             if (lowercaseMessage.contains(text))
@@ -149,12 +149,21 @@ public class GuildSpamFilterPlugin extends Plugin
                                 break;
                             }
                         }
-                        if (found) return;
-                        break;
                     }
-                    case INCLUDE_ALL_EXCEPT:
+
+                    if (!found)
                     {
-                        boolean found = false;
+                        log.debug("No match found removing it..");
+                        intStack[intStackSize - 3] = 0;
+                        return;
+                    }
+                    break;
+                }
+                case INCLUDE_ALL_EXCEPT:
+                {
+                    boolean found = false;
+                    if (pbsToIncludeOrExclude.size() > 0)
+                    {
                         for (String text: pbsToIncludeOrExclude)
                         {
                             if (lowercaseMessage.contains(text))
@@ -163,13 +172,17 @@ public class GuildSpamFilterPlugin extends Plugin
                                 break;
                             }
                         }
-                        if (!found) return;
-                        break;
                     }
+
+                    if (found)
+                    {
+                        log.debug("Match found removing it..");
+                        intStack[intStackSize - 3] = 0;
+                        return;
+                    }
+                    break;
                 }
             }
-            log.debug("New pb detected removing it..");
-            intStack[intStackSize - 3] = 0;
         }
         else if (config.filterRaidDrop() && message.contains("received special loot"))
         {
@@ -215,6 +228,19 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
+        else if (config.filterXpMilestone() && message.contains("XP in"))
+        {
+            log.debug("New XP milestone detected..");
+            int index = message.indexOf("reached") + 8;
+            int index2 = message.indexOf("XP in") - 1;
+            String part = message.substring(index, index2).replace(",", "");
+            long xp = Long.parseLong(part);
+            if (xp < config.xpMilestoneThreshold())
+            {
+                log.debug("XP milestone was below threshold: " + xp + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
+        }
         else if (config.filterLevelUp() && message.contains("has reached"))
         {
             log.debug("New level up detected..");
@@ -236,19 +262,6 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             log.debug("New clan member detected removing it..");
             intStack[intStackSize - 3] = 0;
-        }
-        else if (config.filterXpMilestone() && message.contains("XP in"))
-        {
-            log.debug("New XP milestone detected..");
-            int index = message.indexOf("reached") + 8;
-            int index2 = message.indexOf("XP in") - 1;
-            String part = message.substring(index, index2).replace(",", "");
-            long xp = Long.parseLong(part);
-            if (xp < config.xpMilestoneThreshold())
-            {
-                log.debug("XP milestone was below threshold: " + xp + " removing it..");
-                intStack[intStackSize - 3] = 0;
-            }
         }
         else if (config.filterDefaultMessage() && message.contains("To talk in your"))
         {
@@ -381,7 +394,8 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (!customFilters.isEmpty())
+
+        if (customFilters.size() > 0)
         {
             log.debug("Custom filter was not empty scanning..");
             String lowercaseMessage = message.toLowerCase();
@@ -401,6 +415,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
+
         stringStack[stringStackSize - 1] = message;
     }
 }
