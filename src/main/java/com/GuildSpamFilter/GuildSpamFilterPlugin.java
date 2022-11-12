@@ -133,7 +133,8 @@ public class GuildSpamFilterPlugin extends Plugin
         if (config.filterPb() && message.contains("has achieved a new"))
         {
             log.debug("New PB detected.. Mode was set to: " + config.pbToIncludeOrExcludeEnum());
-            String lowercaseMessage = message.toLowerCase();
+            String partWithoutPlayerName = message.substring(12);
+            String lowercaseMessage = partWithoutPlayerName.toLowerCase();
             switch (config.pbToIncludeOrExcludeEnum())
             {
                 case EXCLUDE_ALL_EXCEPT:
