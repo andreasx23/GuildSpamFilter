@@ -70,7 +70,8 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             for (String value: values)
             {
-                if (value.length() > 0) pbsToIncludeOrExclude.add(value.trim().toLowerCase());
+                value = value.trim().toLowerCase();
+                if (value.length() > 0) pbsToIncludeOrExclude.add(value);
             }
         }
         log.debug("New list: " + String.join(", ", pbsToIncludeOrExclude));
@@ -84,7 +85,8 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             for (String value: values)
             {
-                if (value.length() > 0) customFilters.add(value.trim().toLowerCase());
+                value = value.trim().toLowerCase();
+                if (value.length() > 0) customFilters.add(value);
             }
         }
         log.debug("New list: " + String.join(", ", customFilters));
