@@ -233,11 +233,23 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "filterMaxTotal",
+            name = "Filter Max Total Message",
+            description = "Removes Max Total message from clan broadcast",
+            section = filterSectionGeneral,
+            position = 15
+    )
+    default boolean filterMaxTotal()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
             description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
             section = filterSectionGeneral,
-            position = 15
+            position = 16
     )
     default String customFilters()
     {
@@ -384,8 +396,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Players who got PK'ed from clan broadcast",
             section = filterSectionPvp,
-            position = 0,
-            hidden = true
+            position = 0
     )
     default boolean filterPlayerDied()
     {
@@ -397,8 +408,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Player Kill",
             description = "Removes Players who get a PK from clan broadcast",
             section = filterSectionPvp,
-            position = 1,
-            hidden = true
+            position = 1
     )
     default boolean filterPlayerKill()
     {

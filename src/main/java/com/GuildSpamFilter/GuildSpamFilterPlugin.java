@@ -128,7 +128,7 @@ public class GuildSpamFilterPlugin extends Plugin
         String playerName = client.getLocalPlayer().getName();
         if (config.excludeSelf() && playerName != null && message.startsWith(playerName))
         {
-            log.info("New broadcast for own player detected skipping it.. Player name was: " + playerName);
+            log.debug("New broadcast for own player detected skipping it.. Player name was: " + playerName);
             return;
         }
 
@@ -218,6 +218,11 @@ public class GuildSpamFilterPlugin extends Plugin
             log.debug("New pet detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
+        else if (config.filterMaxTotal() && message.contains("has reached the highest possible total level of"))
+        {
+            log.debug("New max total detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
         else if (config.filterTotalLevelMilestone() && message.contains("has reached a total"))
         {
             log.debug("New total level detected removing it..");
@@ -291,16 +296,16 @@ public class GuildSpamFilterPlugin extends Plugin
             log.debug("New kicked clan member detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
-//        else if (config.filterPlayerDied() && message.contains("has died")) // I need the correct text to filter by
-//        {
-//            log.debug("New hardcore death detected removing it..");
-//            intStack[intStackSize - 3] = 0;
-//        }
-//        else if (config.filterPlayerKill() && message.contains("has killed")) // I need the correct text to filter by
-//        {
-//            log.debug("New hardcore death detected removing it..");
-//            intStack[intStackSize - 3] = 0;
-//        }
+        else if (config.filterPlayerDied() && message.contains("has been defeated by"))
+        {
+            log.debug("New player has been defeated by another player detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
+        else if (config.filterPlayerKill() && message.contains("has defeated"))
+        {
+            log.debug("New player has defeated a another player detected removing it..");
+            intStack[intStackSize - 3] = 0;
+        }
 //        else if (config.filterMemberLeftClan() && message.contains("has left")) // I need the correct text to filter by
 //        {
 //            log.debug("New members who left the clan detected removing it..");
