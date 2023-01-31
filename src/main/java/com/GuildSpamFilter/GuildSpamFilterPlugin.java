@@ -2,6 +2,9 @@ package com.GuildSpamFilter;
 
 import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
 import com.GuildSpamFilter.Configs.CombatDiariesEnum;
+import com.GuildSpamFilter.Handlers.CollectionLogHandler;
+import com.GuildSpamFilter.Models.Categori;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +18,8 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import javax.inject.Inject;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -37,6 +42,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private GuildSpamFilterConfig config;
     private HashSet<String> pbsToIncludeOrExclude;
     private HashSet<String> customFilters;
+    private Categori[] categoris;
 
     @Provides
     GuildSpamFilterConfig provideConfig(ConfigManager configManager)
@@ -45,11 +51,13 @@ public class GuildSpamFilterPlugin extends Plugin
     }
 
     @Override
-    protected void startUp() throws RuntimeException
+    protected void startUp() throws RuntimeException, IOException
     {
         log.info("Clan Spam Filter started!");
         pbsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
+        CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
+        categoris = collectionLogHandler.ReadData();
         UpdatePbsToIncludeOrExclude();
         UpdateCustomFilters();
     }
@@ -60,6 +68,7 @@ public class GuildSpamFilterPlugin extends Plugin
         log.info("Clan Spam Filter stopped!");
         pbsToIncludeOrExclude = null;
         customFilters = null;
+        categoris = null;
     }
 
     private void UpdatePbsToIncludeOrExclude()
@@ -261,10 +270,67 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (config.filterCollectionLog() && message.contains("a new collection log"))
+        else if ((config.filterCollectionLogBosses() ||
+                config.filterCollectionLogRaids() ||
+                config.filterCollectionLogClues() ||
+                config.filterCollectionLogMinigames() ||
+                config.filterCollectionLogOther()) && message.contains("a new collection log"))
         {
-            log.debug("New collection log item detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            int leftIndex = message.indexOf(":") + 1;
+            int rightIndex = message.indexOf("(");
+            String part = message.substring(leftIndex, rightIndex).trim();
+            boolean isFound = false;
+            for (Categori categori : categoris)
+            {
+                switch (categori.name)
+                {
+                    case "Bosses":
+                        if (config.filterCollectionLogBosses() && categori.allItems.contains(part))
+                        {
+                            log.debug("New collection log item detected removing it..");
+                            intStack[intStackSize - 3] = 0;
+                            isFound = true;
+                        }
+                        break;
+                    case "Raids":
+                        if (config.filterCollectionLogRaids() && categori.allItems.contains(part))
+                        {
+                            log.debug("New collection log item detected removing it..");
+                            intStack[intStackSize - 3] = 0;
+                            isFound = true;
+                        }
+                        break;
+                    case "Clues":
+                        if (config.filterCollectionLogClues() && categori.allItems.contains(part))
+                        {
+                            log.debug("New collection log item detected removing it..");
+                            intStack[intStackSize - 3] = 0;
+                            isFound = true;
+                        }
+                        break;
+                    case "Minigames":
+                        if (config.filterCollectionLogMinigames() && categori.allItems.contains(part))
+                        {
+                            log.debug("New collection log item detected removing it..");
+                            intStack[intStackSize - 3] = 0;
+                            isFound = true;
+                        }
+                        break;
+                    case "Other":
+                        if (config.filterCollectionLogOther() && categori.allItems.contains(part))
+                        {
+                            log.debug("New collection log item detected removing it..");
+                            intStack[intStackSize - 3] = 0;
+                            isFound = true;
+                        }
+                        break;
+                }
+
+                if (isFound)
+                {
+                    break;
+                }
+            }
         }
         else if (config.filterNewClanMember() && message.contains("has been invited into the"))
         {

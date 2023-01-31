@@ -19,13 +19,21 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigSection(
             position = 1,
             closedByDefault = true,
+            name = "Collection Log Filters",
+            description = "Collection Log broadcast filters"
+    )
+    final String filterSectionCollectionLog = "Collection Log Filters";
+
+    @ConfigSection(
+            position = 2,
+            closedByDefault = true,
             name = "Skilling Filters",
             description = "Skilling broadcast filters"
     )
     final String filterSectionSkilling = "Skilling Filters";
 
     @ConfigSection(
-            position = 2,
+            position = 3,
             closedByDefault = true,
             name = "PvM Filters",
             description = "PvM broadcast filters"
@@ -33,7 +41,7 @@ public interface GuildSpamFilterConfig extends Config
     final String filterSectionPvm = "PvM Filters";
 
     @ConfigSection(
-            position = 3,
+            position = 4,
             closedByDefault = true,
             name = "PvP Filters",
             description = "PvP broadcast filters"
@@ -41,7 +49,7 @@ public interface GuildSpamFilterConfig extends Config
     final String filterSectionPvp = "PvP Filters";
 
     @ConfigSection(
-            position = 4,
+            position = 5,
             closedByDefault = true,
             name = "Miscellaneous",
             description = "Miscellaneous"
@@ -98,23 +106,11 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
-            keyName = "filterCollectionLog",
-            name = "Filter Collection Log Drops",
-            description = "Removes Collection Log Drops from clan broadcast",
-            section = filterSectionGeneral,
-            position = 4
-    )
-    default boolean filterCollectionLog()
-    {
-        return false;
-    }
-
-    @ConfigItem(
             keyName = "filterNewClanMember",
             name = "Filter New Clan Members",
             description = "Removes New Clan Members from clan broadcast",
             section = filterSectionGeneral,
-            position = 5
+            position = 4
     )
     default boolean filterNewClanMember()
     {
@@ -126,7 +122,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Kicked Clan Members",
             description = "Removes Kicked Clan Members from clan broadcast",
             section = filterSectionGeneral,
-            position = 6
+            position = 5
     )
     default boolean filterClanMemberKicked()
     {
@@ -138,7 +134,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Members Who Leave",
             description = "Removes Members Who Leave from clan broadcast",
             section = filterSectionGeneral,
-            position = 7,
+            position = 6,
             hidden = true
     )
     default boolean filterMemberLeftClan()
@@ -151,7 +147,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Quest Complete",
             description = "Removes Quest Completions from clan broadcast",
             section = filterSectionGeneral,
-            position = 8
+            position = 7
     )
     default boolean filterQuestComplete()
     {
@@ -163,7 +159,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Achievement Diaries",
             description = "Removes Achievement Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 9
+            position = 8
     )
     default boolean filterAchievementDiaries()
     {
@@ -176,7 +172,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Achievement Diaries Threshold",
             description = "Set minimum Achievement Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 10
+            position = 9
     )
     default AchievementDiariesEnum achievementDiariesThreshold()
     {
@@ -188,7 +184,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Combat Diaries",
             description = "Removes Combat Diaries from clan broadcast",
             section = filterSectionGeneral,
-            position = 11
+            position = 10
     )
     default boolean filterCombatDiaries()
     {
@@ -201,7 +197,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Combat Diaries Threshold",
             description = "Set minimum Combat Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 12
+            position = 11
     )
     default CombatDiariesEnum combatDiariesThreshold()
     {
@@ -213,7 +209,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Hardcore Deaths from clan broadcast",
             section = filterSectionGeneral,
-            position = 13
+            position = 12
     )
     default boolean filterHardcoreDeath()
     {
@@ -225,7 +221,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Default Message",
             description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 14
+            position = 13
     )
     default boolean filterDefaultMessage()
     {
@@ -237,7 +233,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Max Total Message",
             description = "Removes Max Total message from clan broadcast",
             section = filterSectionGeneral,
-            position = 15
+            position = 14
     )
     default boolean filterMaxTotal()
     {
@@ -249,12 +245,74 @@ public interface GuildSpamFilterConfig extends Config
             name = "Custom Filters",
             description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
             section = filterSectionGeneral,
-            position = 16
+            position = 15
     )
     default String customFilters()
     {
         return "";
     }
+
+    // Collection Log
+    @ConfigItem(
+            keyName = "filterCollectionLogBosses",
+            name = "Filter Collection Log Boss Drops",
+            description = "Removes Collection Log Boss Drops from clan broadcast",
+            section = filterSectionCollectionLog,
+            position = 0
+    )
+    default boolean filterCollectionLogBosses()
+    {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterCollectionLogRaids",
+            name = "Filter Collection Log Raid Drops",
+            description = "Removes Collection Log Raid Drops from clan broadcast",
+            section = filterSectionCollectionLog,
+            position = 1
+    )
+    default boolean filterCollectionLogRaids()
+    {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterCollectionLogClues",
+            name = "Filter Collection Log Clue Drops",
+            description = "Removes Collection Log Clue Drops from clan broadcast",
+            section = filterSectionCollectionLog,
+            position = 2
+    )
+    default boolean filterCollectionLogClues()
+    {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterCollectionLogMinigames",
+            name = "Filter Collection Log Minigame Drops",
+            description = "Removes Collection Log Minigame Drops from clan broadcast",
+            section = filterSectionCollectionLog,
+            position = 3
+    )
+    default boolean filterCollectionLogMinigames()
+    {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterCollectionLogOther",
+            name = "Filter Collection Log Other Drops",
+            description = "Removes Collection Log Other Drops from clan broadcast",
+            section = filterSectionCollectionLog,
+            position = 4
+    )
+    default boolean filterCollectionLogOther()
+    {
+        return false;
+    }
+
 
     // PvM
     @ConfigItem(

@@ -10,13 +10,15 @@ repositories {
 	mavenCentral()
 }
 
-def runeLiteVersion = '1.9.3'
+def runeLiteVersion = '1.9.8'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
 
 	compileOnly 'org.projectlombok:lombok:1.18.20'
 	annotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.1'
 
 	testImplementation 'junit:junit:4.12'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
