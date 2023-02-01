@@ -3,8 +3,10 @@ package com.GuildSpamFilter.Handlers;
 import com.GuildSpamFilter.Models.Categori;
 import com.GuildSpamFilter.Models.Section;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class CollectionLogHandler
 {
@@ -12,14 +14,17 @@ public class CollectionLogHandler
 
     public Categori[] ReadData() throws IOException
     {
-        Categori[] categoris = om.readValue(new File("..\\JsonFiles\\CollectionLogData.json"), Categori[].class);
-        for (Categori categori: categoris)
+        try (InputStream is = this.getClass().getResourceAsStream("/CollectionLogData.json"))
         {
-            for (Section section : categori.sections)
+            Categori[] categoris = om.readValue(is, Categori[].class);
+            for (Categori categori: categoris)
             {
-                categori.allItems.addAll(section.collectionLogs);
+                for (Section section : categori.sections)
+                {
+                    categori.allItems.addAll(section.collectionLogs);
+                }
             }
+            return categoris;
         }
-        return categoris;
     }
 }

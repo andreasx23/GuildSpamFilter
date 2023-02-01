@@ -20,6 +20,9 @@ import net.runelite.client.plugins.PluginDescriptor;
 import javax.inject.Inject;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Objects;
 
@@ -364,13 +367,27 @@ public class GuildSpamFilterPlugin extends Plugin
         }
         else if (config.filterPlayerDied() && message.contains("has been defeated by"))
         {
-            log.debug("New player has been defeated by another player detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            int left = message.indexOf("(") + 1;
+            int right = message.indexOf(")") - 6;
+            String part = message.substring(left, right).replace(",", "");
+            int value = Integer.parseInt(part);
+            if (value < config.playerDiedThreshold())
+            {
+                log.debug("New player has been defeated by another player detected removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
         }
         else if (config.filterPlayerKill() && message.contains("has defeated"))
         {
-            log.debug("New player has defeated a another player detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            int left = message.indexOf("(") + 1;
+            int right = message.indexOf(")") - 6;
+            String part = message.substring(left, right).replace(",", "");
+            int value = Integer.parseInt(part);
+            if (value < config.playerKillThreshold())
+            {
+                log.debug("New player has been defeated by another player detected removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
         }
 //        else if (config.filterMemberLeftClan() && message.contains("has left")) // I need the correct text to filter by
 //        {

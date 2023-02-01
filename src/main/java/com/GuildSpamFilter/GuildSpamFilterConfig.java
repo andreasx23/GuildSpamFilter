@@ -451,7 +451,7 @@ public interface GuildSpamFilterConfig extends Config
     // PvP
     @ConfigItem(
             keyName = "filterPlayerDied",
-            name = "Filter Hardcore Death",
+            name = "Filter Player Death",
             description = "Removes Players who got PK'ed from clan broadcast",
             section = filterSectionPvp,
             position = 0
@@ -462,15 +462,39 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "playerDiedThreshold",
+            name = "Player Death Threshold",
+            description = "Set minimum GP threshold to filter broadcasts (Default: 2,147,483,647)",
+            section = filterSectionPvp,
+            position = 1
+    )
+    default int playerDiedThreshold()
+    {
+        return Integer.MAX_VALUE;
+    }
+
+    @ConfigItem(
             keyName = "filterPlayerKill",
             name = "Filter Player Kill",
             description = "Removes Players who get a PK from clan broadcast",
             section = filterSectionPvp,
-            position = 1
+            position = 2
     )
     default boolean filterPlayerKill()
     {
         return false;
+    }
+
+    @ConfigItem(
+            keyName = "playerKillThreshold",
+            name = "Player Kill Threshold",
+            description = "Set minimum GP threshold to filter broadcasts (Default: 2,147,483,647)",
+            section = filterSectionPvp,
+            position = 3
+    )
+    default int playerKillThreshold()
+    {
+        return Integer.MAX_VALUE;
     }
 
     // Miscellaneous
