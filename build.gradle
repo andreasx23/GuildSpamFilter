@@ -18,15 +18,11 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok:1.18.20'
 	annotationProcessor 'org.projectlombok:lombok:1.18.20'
 
-	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.1'
+	implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.5'
 
 	testImplementation 'junit:junit:4.12'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
-}
-
-tasks.register("CopyCollectionLogData", Copy) {
-	from Guild
 }
 
 group = 'com.GuildSpamFilter'
