@@ -32,8 +32,3 @@ sourceCompatibility = "10"
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
 }
-
-task copyDocs(type: Copy) {
-	from 'src/main/doc'
-	into 'build/target/doc'
-}
