@@ -33,6 +33,7 @@ tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
 }
 
-tasks.jar {
-	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+task copyDocs(type: Copy) {
+	from 'src/main/doc'
+	into 'build/target/doc'
 }
