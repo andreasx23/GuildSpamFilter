@@ -25,14 +25,14 @@ dependencies {
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
-tasks.withType(Tar) {
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}
-
 group = 'com.GuildSpamFilter'
 version = '1.1-SNAPSHOT'
 sourceCompatibility = "10"
 
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
+}
+
+jar {
+	duplicatesStrategy(DuplicatesStrategy.EXCLUDE)
 }
