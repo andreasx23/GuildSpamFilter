@@ -361,22 +361,39 @@ public class GuildSpamFilterPlugin extends Plugin
         else if (config.filterPlayerDied() && message.contains("has been defeated by"))
         {
             int left = message.indexOf("(") + 1;
-            int right = message.indexOf(")") - 6;
-            String part = message.substring(left, right).replace(",", "");
-            int value = Integer.parseInt(part);
-            if (value < config.playerDiedThreshold())
+            if (left != -1)
+            {
+                int right = message.indexOf(")") - 6;
+                String part = message.substring(left, right).replace(",", "");
+                int value = Integer.parseInt(part);
+                if (value < config.playerDiedThreshold())
+                {
+                    log.debug("New player has been defeated by another player detected removing it..");
+                    intStack[intStackSize - 3] = 0;
+                }
+            }
+            else
             {
                 log.debug("New player has been defeated by another player detected removing it..");
                 intStack[intStackSize - 3] = 0;
             }
+
         }
         else if (config.filterPlayerKill() && message.contains("has defeated"))
         {
             int left = message.indexOf("(") + 1;
-            int right = message.indexOf(")") - 6;
-            String part = message.substring(left, right).replace(",", "");
-            int value = Integer.parseInt(part);
-            if (value < config.playerKillThreshold())
+            if (left != -1)
+            {
+                int right = message.indexOf(")") - 6;
+                String part = message.substring(left, right).replace(",", "");
+                int value = Integer.parseInt(part);
+                if (value < config.playerKillThreshold())
+                {
+                    log.debug("New player has been defeated by another player detected removing it..");
+                    intStack[intStackSize - 3] = 0;
+                }
+            }
+            else
             {
                 log.debug("New player has been defeated by another player detected removing it..");
                 intStack[intStackSize - 3] = 0;
