@@ -4,13 +4,10 @@ import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
 import com.GuildSpamFilter.Configs.CombatDiariesEnum;
 import com.GuildSpamFilter.Handlers.CollectionLogHandler;
 import com.GuildSpamFilter.Models.Categori;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.gson.Gson;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.Player;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -18,13 +15,9 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import javax.inject.Inject;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Objects;
 
 /*
    Shout out to Spam Filter for giving me a baseline on how to implement this simple Clan (broadcast) Spam Filter
@@ -45,7 +38,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private GuildSpamFilterConfig config;
     private HashSet<String> pbsToIncludeOrExclude;
     private HashSet<String> customFilters;
-    private Categori[] categoris;
+    private ArrayList<Categori> categoris;
 
     @Provides
     GuildSpamFilterConfig provideConfig(ConfigManager configManager)
