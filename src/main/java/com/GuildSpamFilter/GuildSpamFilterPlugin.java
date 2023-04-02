@@ -276,7 +276,7 @@ public class GuildSpamFilterPlugin extends Plugin
             int index2 = message.lastIndexOf("/");
             String part = message.substring(index, index2);
             int collectionLogs = Integer.parseInt(part);
-            if (config.filterCollectionLogThreshold() > collectionLogs)
+            if (config.enableCollectionLogThreshold() && config.filterCollectionLogThreshold() > collectionLogs)
             {
                 log.debug("Collection long amount was below threshold: " + collectionLogs + " removing it..");
                 intStack[intStackSize - 3] = 0;

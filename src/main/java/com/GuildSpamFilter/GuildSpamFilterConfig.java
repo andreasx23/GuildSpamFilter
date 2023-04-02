@@ -325,11 +325,23 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "enableCollectionLogThreshold",
+            name = "Enable Collection Log Threshold",
+            description = "Enables collection log threshold",
+            section = filterSectionCollectionLog,
+            position = 5
+    )
+    default boolean enableCollectionLogThreshold()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "filterCollectionLogThreshold",
             name = "Collection Log Threshold",
             description = "Set minimum Collection Log gathered threshold to filter broadcasts (Default: 1444)",
             section = filterSectionCollectionLog,
-            position = 5
+            position = 6
     )
     default int filterCollectionLogThreshold()
     {
