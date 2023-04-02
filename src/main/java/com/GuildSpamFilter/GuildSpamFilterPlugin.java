@@ -272,59 +272,71 @@ public class GuildSpamFilterPlugin extends Plugin
                 config.filterCollectionLogMinigames() ||
                 config.filterCollectionLogOther()) && message.contains("a new collection log"))
         {
-            int leftIndex = message.indexOf(":") + 1;
-            int rightIndex = message.indexOf("(");
-            String part = message.substring(leftIndex, rightIndex).trim();
-            boolean isFound = false;
-            for (Categori categori : categoris)
+            int index = message.lastIndexOf("(") + 1;
+            int index2 = message.lastIndexOf("/");
+            String part = message.substring(index, index2);
+            int collectionLogs = Integer.parseInt(part);
+            if (config.filterCollectionLogThreshold() > collectionLogs)
             {
-                switch (categori.name)
+                log.debug("Collection long amount was below threshold: " + collectionLogs + " removing it..");
+                intStack[intStackSize - 3] = 0;
+            }
+            else
+            {
+                boolean isFound = false;
+                int leftIndex = message.indexOf(":") + 1;
+                int rightIndex = message.indexOf("(");
+                part = message.substring(leftIndex, rightIndex).trim();
+                for (Categori categori : categoris)
                 {
-                    case "Bosses":
-                        if (config.filterCollectionLogBosses() && categori.allItems.contains(part))
-                        {
-                            log.debug("New collection log item detected removing it..");
-                            intStack[intStackSize - 3] = 0;
-                            isFound = true;
-                        }
-                        break;
-                    case "Raids":
-                        if (config.filterCollectionLogRaids() && categori.allItems.contains(part))
-                        {
-                            log.debug("New collection log item detected removing it..");
-                            intStack[intStackSize - 3] = 0;
-                            isFound = true;
-                        }
-                        break;
-                    case "Clues":
-                        if (config.filterCollectionLogClues() && categori.allItems.contains(part))
-                        {
-                            log.debug("New collection log item detected removing it..");
-                            intStack[intStackSize - 3] = 0;
-                            isFound = true;
-                        }
-                        break;
-                    case "Minigames":
-                        if (config.filterCollectionLogMinigames() && categori.allItems.contains(part))
-                        {
-                            log.debug("New collection log item detected removing it..");
-                            intStack[intStackSize - 3] = 0;
-                            isFound = true;
-                        }
-                        break;
-                    case "Other":
-                        if (config.filterCollectionLogOther() && categori.allItems.contains(part))
-                        {
-                            log.debug("New collection log item detected removing it..");
-                            intStack[intStackSize - 3] = 0;
-                            isFound = true;
-                        }
-                        break;
-                }
+                    switch (categori.name)
+                    {
+                        case "Bosses":
+                            if (config.filterCollectionLogBosses() && categori.allItems.contains(part))
+                            {
+                                log.debug("New collection log item detected removing it..");
+                                intStack[intStackSize - 3] = 0;
+                                isFound = true;
+                            }
+                            break;
+                        case "Raids":
+                            if (config.filterCollectionLogRaids() && categori.allItems.contains(part))
+                            {
+                                log.debug("New collection log item detected removing it..");
+                                intStack[intStackSize - 3] = 0;
+                                isFound = true;
+                            }
+                            break;
+                        case "Clues":
+                            if (config.filterCollectionLogClues() && categori.allItems.contains(part))
+                            {
+                                log.debug("New collection log item detected removing it..");
+                                intStack[intStackSize - 3] = 0;
+                                isFound = true;
+                            }
+                            break;
+                        case "Minigames":
+                            if (config.filterCollectionLogMinigames() && categori.allItems.contains(part))
+                            {
+                                log.debug("New collection log item detected removing it..");
+                                intStack[intStackSize - 3] = 0;
+                                isFound = true;
+                            }
+                            break;
+                        case "Other":
+                            if (config.filterCollectionLogOther() && categori.allItems.contains(part))
+                            {
+                                log.debug("New collection log item detected removing it..");
+                                intStack[intStackSize - 3] = 0;
+                                isFound = true;
+                            }
+                            break;
+                    }
 
-                if (isFound)
-                {
-                    break;
+                    if (isFound)
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -377,7 +389,6 @@ public class GuildSpamFilterPlugin extends Plugin
                 log.debug("New player has been defeated by another player detected removing it..");
                 intStack[intStackSize - 3] = 0;
             }
-
         }
         else if (config.filterPlayerKill() && message.contains("has defeated"))
         {
@@ -397,6 +408,30 @@ public class GuildSpamFilterPlugin extends Plugin
             {
                 log.debug("New player has been defeated by another player detected removing it..");
                 intStack[intStackSize - 3] = 0;
+            }
+        }
+        else if (config.filterMemberLeftClan() && message.contains("combat level"))
+        {
+            boolean isMaxCombatMessage = message.contains("highest possible combat level");
+            if (isMaxCombatMessage)
+            {
+                if (config.filterCCombatLevelUpThreshold() > 126)
+                {
+                    log.debug("New max combat level up message detected removing it..");
+                    intStack[intStackSize - 3] = 0;
+                }
+            }
+            else
+            {
+                int index = message.indexOf("combat level") + 13;
+                String part = message.substring(index);
+                String combatLevelStr = part.substring(0, part.length() - 1);
+                int combatLevel = Integer.parseInt(combatLevelStr);
+                if (config.filterCCombatLevelUpThreshold() > combatLevel)
+                {
+                    log.debug("New combat level up message detected removing it..");
+                    intStack[intStackSize - 3] = 0;
+                }
             }
         }
 //        else if (config.filterMemberLeftClan() && message.contains("has left")) // I need the correct text to filter by

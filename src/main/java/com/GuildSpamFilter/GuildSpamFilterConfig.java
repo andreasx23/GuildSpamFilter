@@ -217,35 +217,46 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "filterCombatLevelUpMessage",
+            name = "Filter Combat Level Up",
+            description = "Removes combat level ups from clan broadcast",
+            section = filterSectionGeneral,
+            position = 13
+    )
+    default boolean filterCombatLevelUpMessage()
+    {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterCCombatLevelUpThreshold",
+            name = "Combat Level Up Threshold",
+            description = "Set minimum Combat Level Up threshold to filter broadcasts (Default: 127)",
+            section = filterSectionGeneral,
+            position = 14
+    )
+    default int filterCCombatLevelUpThreshold()
+    {
+        return 127;
+    }
+
+    @ConfigItem(
             keyName = "filterDefaultMessage",
             name = "Filter Default Message",
             description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 13
+            position = 15
     )
     default boolean filterDefaultMessage()
     {
         return false;
     }
-
-    @ConfigItem(
-            keyName = "filterMaxTotal",
-            name = "Filter Max Total Message",
-            description = "Removes Max Total message from clan broadcast",
-            section = filterSectionGeneral,
-            position = 14
-    )
-    default boolean filterMaxTotal()
-    {
-        return false;
-    }
-
     @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
             description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
             section = filterSectionGeneral,
-            position = 15
+            position = 16
     )
     default String customFilters()
     {
@@ -311,6 +322,18 @@ public interface GuildSpamFilterConfig extends Config
     default boolean filterCollectionLogOther()
     {
         return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterCollectionLogThreshold",
+            name = "Collection Log Threshold",
+            description = "Set minimum Collection Log gathered threshold to filter broadcasts (Default: 1444)",
+            section = filterSectionCollectionLog,
+            position = 5
+    )
+    default int filterCollectionLogThreshold()
+    {
+        return 1444;
     }
 
 
@@ -413,11 +436,23 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "filterMaxTotal",
+            name = "Filter Max Total Message",
+            description = "Removes Max Total message from clan broadcast",
+            section = filterSectionSkilling,
+            position = 3
+    )
+    default boolean filterMaxTotal()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "levelThreshold",
             name = "Level Threshold",
             description = "Set minimum Level threshold to filter broadcasts (Default: 100)",
             section = filterSectionSkilling,
-            position = 3
+            position = 4
     )
     default int levelThreshold()
     {
@@ -429,7 +464,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter XP Milestones",
             description = "Removes XP Milestones from clan broadcast",
             section = filterSectionSkilling,
-            position = 4
+            position = 5
     )
     default boolean filterXpMilestone()
     {
@@ -441,7 +476,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "XP Milestone Threshold",
             description = "Set minimum XP Milestone threshold to filter broadcasts (Default: 2,147,483,647)",
             section = filterSectionSkilling,
-            position = 5
+            position = 6
     )
     default int xpMilestoneThreshold()
     {
