@@ -286,7 +286,7 @@ public class GuildSpamFilterPlugin extends Plugin
             {
                 boolean isFound = false;
                 index = message.indexOf(":") + 1;
-                index2 = message.indexOf("(");
+                index2 = message.lastIndexOf("(");
                 part = message.substring(index, index2).trim();
                 for (Categori categori : categoris)
                 {
