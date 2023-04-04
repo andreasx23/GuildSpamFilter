@@ -270,11 +270,12 @@ public class GuildSpamFilterPlugin extends Plugin
                 config.filterCollectionLogRaids() ||
                 config.filterCollectionLogClues() ||
                 config.filterCollectionLogMinigames() ||
-                config.filterCollectionLogOther()) && message.contains("a new collection log"))
+                config.filterCollectionLogOther() ||
+                config.enableCollectionLogThreshold()) && message.contains("a new collection log"))
         {
             int index = message.lastIndexOf("(") + 1;
             int index2 = message.lastIndexOf("/");
-            String part = message.substring(index, index2);
+            String part = message.substring(index, index2).trim();
             int collectionLogs = Integer.parseInt(part);
             if (config.enableCollectionLogThreshold() && config.filterCollectionLogThreshold() > collectionLogs)
             {
@@ -284,9 +285,9 @@ public class GuildSpamFilterPlugin extends Plugin
             else
             {
                 boolean isFound = false;
-                int leftIndex = message.indexOf(":") + 1;
-                int rightIndex = message.indexOf("(");
-                part = message.substring(leftIndex, rightIndex).trim();
+                index = message.indexOf(":") + 1;
+                index2 = message.indexOf("(");
+                part = message.substring(index, index2).trim();
                 for (Categori categori : categoris)
                 {
                     switch (categori.name)
@@ -410,7 +411,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (config.filterMemberLeftClan() && message.contains("combat level"))
+        else if (config.filterCombatLevelUpMessage() && message.contains("combat level"))
         {
             boolean isMaxCombatMessage = message.contains("highest possible combat level");
             if (isMaxCombatMessage)
