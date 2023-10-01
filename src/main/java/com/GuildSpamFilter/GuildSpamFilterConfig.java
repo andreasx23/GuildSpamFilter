@@ -353,7 +353,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "filterRaidDrop",
             name = "Filter Raid Drops",
-            description = "Removes Personal Bests from clan broadcast",
+            description = "Removes raid drops from clan broadcast",
             section = filterSectionPvm,
             position = 0
     )
@@ -546,14 +546,15 @@ public interface GuildSpamFilterConfig extends Config
 
     // Miscellaneous
     @ConfigItem(
-            keyName = "excludeSelf",
-            name = "Always allow self",
-            description = "Always allow own player broadcasts to be shown in Clan",
+            keyName = "excludedPlayerNames",
+            name = "Player names to always include in broadcasts",
+            description = "Using comma separation e.g. 'Biceps Btw, store biceps' if any player broadcasts matches these search terms it would always be included in Clan Broadcast (case insensitive)",
             section = miscellaneous,
-            position = 0
+            position = 0,
+            hidden = false
     )
-    default boolean excludeSelf()
+    default String excludedPlayerNames()
     {
-        return false;
+        return "";
     }
 }

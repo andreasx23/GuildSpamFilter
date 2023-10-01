@@ -38,6 +38,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private GuildSpamFilterConfig config;
     private HashSet<String> pbsToIncludeOrExclude;
     private HashSet<String> customFilters;
+    private HashSet<String> alwaysIncludedPlayerNames;
     private ArrayList<Categori> categoris;
 
     @Provides
@@ -52,10 +53,12 @@ public class GuildSpamFilterPlugin extends Plugin
         log.info("Clan Spam Filter started!");
         pbsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
+        alwaysIncludedPlayerNames = new HashSet<>();
         CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
         categoris = collectionLogHandler.ReadData();
         UpdatePbsToIncludeOrExclude();
         UpdateCustomFilters();
+        UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
     }
 
     @Override
@@ -64,6 +67,7 @@ public class GuildSpamFilterPlugin extends Plugin
         log.info("Clan Spam Filter stopped!");
         pbsToIncludeOrExclude = null;
         customFilters = null;
+        alwaysIncludedPlayerNames = null;
         categoris = null;
     }
 
@@ -76,7 +80,10 @@ public class GuildSpamFilterPlugin extends Plugin
             for (String value: values)
             {
                 value = value.trim().toLowerCase();
-                if (value.length() > 0) pbsToIncludeOrExclude.add(value);
+                if (value.length() > 0)
+                {
+                    pbsToIncludeOrExclude.add(value);
+                }
             }
         }
         log.debug("New list: " + String.join(", ", pbsToIncludeOrExclude));
@@ -91,10 +98,32 @@ public class GuildSpamFilterPlugin extends Plugin
             for (String value: values)
             {
                 value = value.trim().toLowerCase();
-                if (value.length() > 0) customFilters.add(value);
+                if (value.length() > 0)
+                {
+                    customFilters.add(value);
+                }
             }
         }
         log.debug("New list: " + String.join(", ", customFilters));
+    }
+
+
+    private void UpdateAlwaysIncludedPlayerIgnsFromBroadcasts()
+    {
+        alwaysIncludedPlayerNames.clear();
+        String[] values = config.excludedPlayerNames().split(",");
+        if (values.length > 0)
+        {
+            for (String value: values)
+            {
+                value = value.trim().toLowerCase();
+                if (value.length() > 0)
+                {
+                    alwaysIncludedPlayerNames.add(value);
+                }
+            }
+        }
+        log.info("New list: " + String.join(", ", alwaysIncludedPlayerNames));
     }
 
     @Subscribe
@@ -108,33 +137,50 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             UpdateCustomFilters();
         }
+        else if (event.getKey().equals("excludedPlayerNames"))
+        {
+            UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
+        }
     }
 
     @Subscribe
     public void onScriptCallbackEvent(ScriptCallbackEvent event)
     {
-        if (!event.getEventName().equals("chatFilterCheck")) return;
+        if (!event.getEventName().equals("chatFilterCheck"))
+        {
+            return;
+        }
 
         int[] intStack = client.getIntStack();
         int intStackSize = client.getIntStackSize();
         String[] stringStack = client.getStringStack();
         int stringStackSize = client.getStringStackSize();
-
-        if (intStack.length < intStackSize - 3 || stringStack.length < stringStackSize - 1) return;
+        if (intStack.length < intStackSize - 3 || stringStack.length < stringStackSize - 1)
+        {
+            return;
+        }
 
         final int messageType = intStack[intStackSize - 2];
         ChatMessageType chatMessageType = ChatMessageType.of(messageType);
-        if (chatMessageType != ChatMessageType.CLAN_MESSAGE) return;
+        if (chatMessageType != ChatMessageType.CLAN_MESSAGE)
+        {
+            return;
+        }
 
-        String message = stringStack[stringStackSize - 1];
-
+        String message = stringStack[stringStackSize - 1].trim();
         log.debug("Broadcast message: " + message);
 
-        String playerName = client.getLocalPlayer().getName();
-        if (config.excludeSelf() && playerName != null && message.startsWith(playerName))
+        if (alwaysIncludedPlayerNames.size() > 0)
         {
-            log.debug("New broadcast for own player detected skipping it.. Player name was: " + playerName);
-            return;
+            String lowercaseBroadcastMessage = message.toLowerCase();
+            for (String playerName: alwaysIncludedPlayerNames)
+            {
+                if (lowercaseBroadcastMessage.startsWith(playerName))
+                {
+                    log.info("New broadcast for player detected skipping it.. Player name was: " + playerName);
+                    return;
+                }
+            }
         }
 
         if (config.filterPb() && message.contains("has achieved a new"))
