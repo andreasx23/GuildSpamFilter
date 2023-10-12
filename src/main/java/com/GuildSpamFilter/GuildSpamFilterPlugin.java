@@ -53,7 +53,7 @@ public class GuildSpamFilterPlugin extends Plugin
         log.info("Clan Spam Filter started!");
         pbsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
-        alwaysIncludedPlayerNames = new HashSet<>();
+        alwaysIncludedPlayerNames = new HashSet<String>();
         CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
         categoris = collectionLogHandler.ReadData();
         UpdatePbsToIncludeOrExclude();
@@ -86,6 +86,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 }
             }
         }
+
         log.debug("New list: " + String.join(", ", pbsToIncludeOrExclude));
     }
 
@@ -104,6 +105,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 }
             }
         }
+
         log.debug("New list: " + String.join(", ", customFilters));
     }
 
@@ -123,7 +125,23 @@ public class GuildSpamFilterPlugin extends Plugin
                 }
             }
         }
-        log.info("New list: " + String.join(", ", alwaysIncludedPlayerNames));
+
+        log.debug("New list: " + String.join(", ", alwaysIncludedPlayerNames));
+    }
+
+    private boolean isBroadcastMessageForPlayer(String playerName, String broadcastMessage)
+    {
+        for (int i = 0; i < playerName.length(); i++)
+        {
+            char currentPlayerChar = playerName.charAt(i);
+            char currentBroadcastMessageChar = broadcastMessage.charAt(i);
+            if (currentPlayerChar != currentBroadcastMessageChar)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Subscribe
@@ -175,9 +193,9 @@ public class GuildSpamFilterPlugin extends Plugin
             String lowercaseBroadcastMessage = message.toLowerCase();
             for (String playerName: alwaysIncludedPlayerNames)
             {
-                if (lowercaseBroadcastMessage.startsWith(playerName))
+                if (isBroadcastMessageForPlayer(playerName, lowercaseBroadcastMessage))
                 {
-                    log.info("New broadcast for player detected skipping it.. Player name was: " + playerName);
+                    log.debug("New broadcast for player detected skipping it.. Player name was: " + playerName);
                     return;
                 }
             }
