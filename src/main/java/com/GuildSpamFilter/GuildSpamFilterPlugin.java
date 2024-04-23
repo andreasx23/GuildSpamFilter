@@ -12,11 +12,13 @@ import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /*
@@ -40,6 +42,11 @@ public class GuildSpamFilterPlugin extends Plugin
     private HashSet<String> customFilters;
     private HashSet<String> alwaysIncludedPlayerNames;
     private ArrayList<Categori> categoris;
+    private HashMap<String, Integer> raidItemsIds;
+    private HashMap<String, Integer> raidItemPrices;
+
+    @Inject
+    private ItemManager _itemManager;
 
     @Provides
     GuildSpamFilterConfig provideConfig(ConfigManager configManager)
@@ -54,11 +61,15 @@ public class GuildSpamFilterPlugin extends Plugin
         pbsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
         alwaysIncludedPlayerNames = new HashSet<String>();
+        raidItemsIds = new HashMap<String, Integer>();
+        raidItemPrices = new HashMap<String, Integer>();
+
         CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
         categoris = collectionLogHandler.ReadData();
         UpdatePbsToIncludeOrExclude();
         UpdateCustomFilters();
         UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
+        SetupRaidItemPrices();
     }
 
     @Override
@@ -69,6 +80,57 @@ public class GuildSpamFilterPlugin extends Plugin
         customFilters = null;
         alwaysIncludedPlayerNames = null;
         categoris = null;
+        raidItemsIds = null;
+        raidItemPrices = null;
+    }
+
+    private void SetupRaidItemPrices()
+    {
+        AddCoxRaidItems();
+        AddTobRaidItems();
+        AddToaRaidItems();
+        raidItemsIds.forEach((key, value) -> {
+            int itemPrice = _itemManager.getItemPrice(value);
+            raidItemPrices.put(key.toLowerCase(), itemPrice);
+        });
+    }
+
+    private void AddCoxRaidItems()
+    {
+        raidItemsIds.put("Twisted Bow", 20997);
+        raidItemsIds.put("Kodai insignia", 21043);
+        raidItemsIds.put("Elder maul", 21003);
+        raidItemsIds.put("Ancestral hat", 21018);
+        raidItemsIds.put("Ancestral robe bottom", 21024);
+        raidItemsIds.put("Ancestral robe top", 21021);
+        raidItemsIds.put("Dragon claws", 13652);
+        raidItemsIds.put("Twisted buckler", 21000);
+        raidItemsIds.put("Dragon hunter crossbow", 21012);
+        raidItemsIds.put("Dexterous prayer scroll", 21034);
+        raidItemsIds.put("Arcane prayer scroll", 21079);
+        raidItemsIds.put("Dinh's bulwark", 21015);
+    }
+
+    private void AddTobRaidItems()
+    {
+        raidItemsIds.put("Scythe of vitur (uncharged)", 22486);
+        raidItemsIds.put("Sanguinesti staff (uncharged)", 22481);
+        raidItemsIds.put("Ghrazi rapier", 22324);
+        raidItemsIds.put("Avernic defender hilt", 22477);
+        raidItemsIds.put("Justiciar chestguard", 22327);
+        raidItemsIds.put("Justiciar faceguard", 22326);
+        raidItemsIds.put("Justiciar legguards", 22328);
+    }
+
+    private void AddToaRaidItems()
+    {
+        raidItemsIds.put("Osmumten's fang", 26219);
+        raidItemsIds.put("Lightbearer", 25975);
+        raidItemsIds.put("Masori body", 27229);
+        raidItemsIds.put("Masori chaps", 27232);
+        raidItemsIds.put("Masori mask", 27226);
+        raidItemsIds.put("Elidinis' ward", 25985);
+        raidItemsIds.put("Tumeken's shadow (uncharged)", 27277);
     }
 
     private void UpdatePbsToIncludeOrExclude()
@@ -256,20 +318,17 @@ public class GuildSpamFilterPlugin extends Plugin
                 }
             }
         }
-        else if (config.filterRaidDrop() && message.contains("received special loot"))
+        else if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
         {
             log.debug("New raid loot detected..");
-            int index = message.lastIndexOf("(");
-            int index2 = message.lastIndexOf(")");
-            if (index != -1 && index2 != -1)
+            int index = message.lastIndexOf(":");
+            String itemPart = message.substring(index);
+            String item = itemPart.substring(2, itemPart.length() - 1).toLowerCase();
+            Integer gpValue = raidItemPrices.get(item);
+            if (gpValue < config.raidLootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
             {
-                String part = message.substring(index + 1, index2).replace(",", "").replace("coins", "").trim();
-                long gpValue = Long.parseLong(part);
-                if (gpValue < config.raidLootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
-                {
-                    log.debug("Raid loot was below threshold: " + gpValue + " removing it..");
-                    intStack[intStackSize - 3] = 0;
-                }
+                log.debug("Raid loot was below threshold: " + gpValue + " removing it..");
+                intStack[intStackSize - 3] = 0;
             }
             else
             {
