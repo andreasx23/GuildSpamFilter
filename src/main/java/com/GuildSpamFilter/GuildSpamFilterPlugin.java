@@ -324,16 +324,14 @@ public class GuildSpamFilterPlugin extends Plugin
             int index = message.lastIndexOf(":");
             String itemPart = message.substring(index);
             String item = itemPart.substring(2, itemPart.length() - 1).toLowerCase();
-            Integer gpValue = raidItemPrices.get(item);
-            if (gpValue < config.raidLootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
+            if (raidItemPrices.containsKey(item))
             {
-                log.debug("Raid loot was below threshold: " + gpValue + " removing it..");
-                intStack[intStackSize - 3] = 0;
-            }
-            else
-            {
-                log.debug("Raid loot could not find value of item but we still remove it..");
-                intStack[intStackSize - 3] = 0;
+                Integer gpValue = raidItemPrices.get(item);
+                if (gpValue < config.raidLootGpThreshold() || gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
+                {
+                    log.debug("Raid loot was below threshold: " + gpValue + " removing it..");
+                    intStack[intStackSize - 3] = 0;
+                }
             }
         }
         else if (config.filterRegularDrops() && message.contains("received a drop"))
@@ -434,7 +432,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 config.filterCollectionLogClues() ||
                 config.filterCollectionLogMinigames() ||
                 config.filterCollectionLogOther() ||
-                config.enableCollectionLogThreshold()) && message.contains("a new collection log"))
+                config.enableCollectionLogThreshold()) && message.contains("a new collection log item"))
         {
             int index = message.lastIndexOf("(");
             int index2 = message.lastIndexOf("/");
