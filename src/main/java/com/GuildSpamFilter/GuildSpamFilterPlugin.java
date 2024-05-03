@@ -200,6 +200,11 @@ public class GuildSpamFilterPlugin extends Plugin
         for (int i = 0; i < playerName.length(); i++)
         {
             char currentPlayerChar = playerName.charAt(i);
+            if (currentPlayerChar == ' ')
+            {
+                continue;
+            }
+
             char currentBroadcastMessageChar = broadcastMessage.charAt(i);
             if (currentPlayerChar != currentBroadcastMessageChar)
             {
