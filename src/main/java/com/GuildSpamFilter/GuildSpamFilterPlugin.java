@@ -45,7 +45,6 @@ public class GuildSpamFilterPlugin extends Plugin
     private ArrayList<Categori> categoris;
     private HashMap<String, Integer> raidItemsIds;
     private HashMap<String, Integer> raidItemPrices;
-    private boolean _isFirstRun;
 
     @Inject
     private ItemManager _itemManager;
@@ -59,13 +58,12 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void startUp() throws RuntimeException, IOException
     {
-        log.info("Clan Spam Filter started!");
+        log.debug("Clan Spam Filter started!");
         pbsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
         alwaysIncludedPlayerNames = new HashSet<String>();
         raidItemsIds = new HashMap<String, Integer>();
         raidItemPrices = new HashMap<String, Integer>();
-        _isFirstRun = true;
 
         CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
         categoris = collectionLogHandler.ReadData();
@@ -77,14 +75,13 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void shutDown()
     {
-        log.info("Clan Spam Filter stopped!");
+        log.debug("Clan Spam Filter stopped!");
         pbsToIncludeOrExclude = null;
         customFilters = null;
         alwaysIncludedPlayerNames = null;
         categoris = null;
         raidItemsIds = null;
         raidItemPrices = null;
-        _isFirstRun = true;
     }
 
     private void SetupRaidItemPrices()
@@ -93,6 +90,7 @@ public class GuildSpamFilterPlugin extends Plugin
         AddTobRaidItems();
         AddToaRaidItems();
 
+        raidItemPrices.clear();
         for (Map.Entry<String, Integer> kv: raidItemsIds.entrySet()) {
             String key = kv.getKey();
             int value = kv.getValue();
@@ -237,9 +235,8 @@ public class GuildSpamFilterPlugin extends Plugin
             return;
         }
 
-        if (_isFirstRun)
+        if (raidItemPrices.isEmpty())
         {
-            _isFirstRun = false;
             SetupRaidItemPrices();
         }
 
@@ -527,7 +524,7 @@ public class GuildSpamFilterPlugin extends Plugin
             log.debug("New clan member detected removing it..");
             intStack[intStackSize - 3] = 0;
         }
-        else if (config.filterDefaultMessage() && message.contains("To talk in your"))
+        else if (config.filterDefaultMessage() && message.contains("start each line of chat"))
         {
             log.debug("New default message detected removing it..");
             intStack[intStackSize - 3] = 0;
