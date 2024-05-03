@@ -58,7 +58,7 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void startUp() throws RuntimeException, IOException
     {
-        log.debug("Clan Spam Filter started!");
+        log.info("Clan Spam Filter started!");
         pbsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
         alwaysIncludedPlayerNames = new HashSet<String>();
@@ -75,7 +75,7 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void shutDown()
     {
-        log.debug("Clan Spam Filter stopped!");
+        log.info("Clan Spam Filter stopped!");
         pbsToIncludeOrExclude = null;
         customFilters = null;
         alwaysIncludedPlayerNames = null;
