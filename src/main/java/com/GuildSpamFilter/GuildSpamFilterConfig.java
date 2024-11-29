@@ -557,4 +557,17 @@ public interface GuildSpamFilterConfig extends Config
     {
         return "";
     }
+
+    @ConfigItem(
+            keyName = "filterLeaguesBroadcasts",
+            name = "Filter leagues broadcasts",
+            description = "Exclude leagues broadcasts messages from the clan chat",
+            section = miscellaneous,
+            position = 1,
+            hidden = false
+    )
+    default boolean filterLeaguesBroadcasts()
+    {
+        return false;
+    }
 }

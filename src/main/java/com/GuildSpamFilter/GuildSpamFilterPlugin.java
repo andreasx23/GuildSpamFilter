@@ -264,6 +264,11 @@ public class GuildSpamFilterPlugin extends Plugin
         String message = stringStack[stringStackSize - 1].trim();
         log.debug("Broadcast message: " + message);
 
+        if(config.filterLeaguesBroadcasts() && message.contains("<img=22>")){
+            log.debug("Leagues broadcast detected..");
+            intStack[intStackSize - 3] = 0;
+        }
+
         if (alwaysIncludedPlayerNames.size() > 0)
         {
             String lowercaseBroadcastMessage = message.toLowerCase();
