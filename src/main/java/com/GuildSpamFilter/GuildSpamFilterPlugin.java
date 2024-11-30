@@ -264,11 +264,6 @@ public class GuildSpamFilterPlugin extends Plugin
         String message = stringStack[stringStackSize - 1].trim();
         log.debug("Broadcast message: " + message);
 
-        if(config.filterLeaguesBroadcasts() && message.contains("<img=22>")){
-            log.debug("Leagues broadcast detected..");
-            intStack[intStackSize - 3] = 0;
-        }
-
         if (alwaysIncludedPlayerNames.size() > 0)
         {
             String lowercaseBroadcastMessage = message.toLowerCase();
@@ -282,7 +277,13 @@ public class GuildSpamFilterPlugin extends Plugin
             }
         }
 
-        if (config.filterPb() && message.contains("has achieved a new"))
+        if (config.filterLeaguesBroadcasts() && message.contains("<img=22>"))
+        {
+            log.debug("Leagues broadcast detected..");
+            intStack[intStackSize - 3] = 0;
+            return;
+        }
+        else if (config.filterPb() && message.contains("has achieved a new"))
         {
             log.debug("New PB detected.. Mode was set to: " + config.pbToIncludeOrExcludeEnum());
             String partWithoutPlayerName = message.substring(12);
