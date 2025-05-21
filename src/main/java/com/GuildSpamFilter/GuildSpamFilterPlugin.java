@@ -406,7 +406,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (config.filterXpMilestone() && message.contains("XP in"))
+        else if (config.filterXpMilestone() && message.contains("has reached") && message.contains("XP in"))
         {
             log.debug("New XP milestone detected..");
             int index = message.indexOf("reached");
@@ -427,7 +427,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (config.filterLevelUp() && message.contains("has reached"))
+        else if (config.filterLevelUp() && message.contains("has reached") && message.contains("level") && !message.contains("combat level"))
         {
             log.debug("New level up detected..");
             int index = message.indexOf("level");
@@ -600,12 +600,12 @@ public class GuildSpamFilterPlugin extends Plugin
                 intStack[intStackSize - 3] = 0;
             }
         }
-        else if (config.filterCombatLevelUpMessage() && message.contains("combat level"))
+        else if (config.filterCombatLevelUpMessage() && (message.contains("has reached combat level") || message.contains("highest possible combat level")))
         {
             boolean isMaxCombatMessage = message.contains("highest possible combat level");
             if (isMaxCombatMessage)
             {
-                if (config.filterCCombatLevelUpThreshold() > 126)
+                if (config.filterCombatLevelUpThreshold() > 126)
                 {
                     log.debug("New max combat level up message detected removing it..");
                     intStack[intStackSize - 3] = 0;
@@ -619,7 +619,7 @@ public class GuildSpamFilterPlugin extends Plugin
                     String part = message.substring(index + 13);
                     String combatLevelStr = part.substring(0, part.length() - 1);
                     int combatLevel = Integer.parseInt(combatLevelStr);
-                    if (config.filterCCombatLevelUpThreshold() > combatLevel)
+                    if (config.filterCombatLevelUpThreshold() > combatLevel)
                     {
                         log.debug("New combat level up message detected removing it..");
                         intStack[intStackSize - 3] = 0;
@@ -632,22 +632,32 @@ public class GuildSpamFilterPlugin extends Plugin
                 }
             }
         }
-//        else if (config.filterMemberLeftClan() && message.contains("has left")) // I need the correct text to filter by
-//        {
-//            log.debug("New members who left the clan detected removing it..");
-//            intStack[intStackSize - 3] = 0;
-//        }
-        else if (config.filterCombatDiaries() && message.contains("Combat Achievement"))
+        else if (config.filterCombatDiaries() && (message.contains("Combat Achievement") || message.contains("combat task")))
         {
             log.debug("New combat achievement diaries detected..");
-            int index = message.indexOf("the");
+            int index = -1;
+            String indexText = "";
+            if (message.contains("Combat Achievement")) {
+                indexText = "the";
+                index = message.indexOf(indexText);
+            } else if (message.contains("combat task")) {
+                if (message.contains("completed an")) {
+                    indexText = "completed an";
+                } else if (message.contains("completed a")) {
+                    indexText = "completed a";
+                }
+
+                index = message.indexOf(indexText);
+            }
+
             if (index != -1)
             {
-                String part = message.substring(index + 4);
+                String part = message.substring(index + indexText.length() + 1);
                 int index2 = part.indexOf(" ");
                 if (index2 != -1)
                 {
                     String combatDiaryLevel = part.substring(0, index2);
+                    combatDiaryLevel = combatDiaryLevel.substring(0, 1).toUpperCase() + combatDiaryLevel.substring(1);
                     if (config.combatDiariesThreshold() == CombatDiariesEnum.ALL)
                     {
                         log.debug("Combat Achievement Diaries Threshold was set to: " + config.achievementDiariesThreshold() + "and diary was: " + combatDiaryLevel + " removing it..");

@@ -235,7 +235,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 14
     )
-    default int filterCCombatLevelUpThreshold()
+    default int filterCombatLevelUpThreshold()
     {
         return 127;
     }
