@@ -84,7 +84,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "pbsToIncludeOrExclude",
             name = "Personal Bests to Include or Exclude",
-            description = "Comma-separated list of personal bests to include or exclude based on the selected mode (e.g. 'Chambers of Xeric, theatre of blood'). Case insensitive.",
+            description = "Comma-separated list of personal bests to include or exclude based on the selected mode (e.g: Chambers of Xeric, theatre of blood). Case insensitive.",
             section = filterSectionGeneral,
             position = 2
     )
@@ -265,7 +265,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
-            description = "Comma-separated list of custom terms to filter from broadcasts (e.g. 'Chambers of Xeric, theatre of blood'). Any message containing these terms will be removed. Case insensitive.",
+            description = "Comma-separated list of custom terms to filter from broadcasts (e.g: Chambers of Xeric, theatre of blood). Any message containing these terms will be removed. Case insensitive.",
             section = filterSectionGeneral,
             position = 17
     )
@@ -558,7 +558,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "excludedPlayerNames",
             name = "Player Names to Always Include",
-            description = "Comma-separated list of player names whose broadcasts will always be shown regardless of other filter settings (e.g. 'Biceps Btw, store biceps'). Case insensitive.",
+            description = "Comma-separated list of player names whose broadcasts will always be shown regardless of other filter settings (e.g: Biceps Btw, store biceps). Case insensitive.",
             section = miscellaneous,
             position = 0,
             hidden = false
