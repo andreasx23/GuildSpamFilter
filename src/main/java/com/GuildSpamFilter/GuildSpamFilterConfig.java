@@ -166,7 +166,6 @@ public interface GuildSpamFilterConfig extends Config
         return false;
     }
 
-
     @ConfigItem(
             keyName = "achievementDiariesThreshold",
             name = "Achievement Diaries Threshold",
@@ -191,13 +190,24 @@ public interface GuildSpamFilterConfig extends Config
         return false;
     }
 
+    @ConfigItem(
+            keyName = "filterCombatDiaryTasks",
+            name = "Filter Combat Diary tasks",
+            description = "Removes Combat Diary tasks  from clan broadcast",
+            section = filterSectionGeneral,
+            position = 11
+    )
+    default boolean filterCombatDiaryTasks()
+    {
+        return false;
+    }
 
     @ConfigItem(
             keyName = "combatDiariesThreshold",
-            name = "Combat Diaries Threshold",
+            name = "Combat Diary Threshold",
             description = "Set minimum Combat Diary threshold to filter broadcasts (Default: All)",
             section = filterSectionGeneral,
-            position = 11
+            position = 12
     )
     default CombatDiariesEnum combatDiariesThreshold()
     {
@@ -209,7 +219,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Hardcore Death",
             description = "Removes Hardcore Deaths from clan broadcast",
             section = filterSectionGeneral,
-            position = 12
+            position = 13
     )
     default boolean filterHardcoreDeath()
     {
@@ -221,7 +231,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Combat Level Up",
             description = "Removes combat level ups from clan broadcast",
             section = filterSectionGeneral,
-            position = 13
+            position = 14
     )
     default boolean filterCombatLevelUpMessage()
     {
@@ -229,11 +239,11 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
-            keyName = "filterCCombatLevelUpThreshold",
+            keyName = "filterCombatLevelUpThreshold",
             name = "Combat Level Up Threshold",
             description = "Set minimum Combat Level Up threshold to filter broadcasts (Default: 127)",
             section = filterSectionGeneral,
-            position = 14
+            position = 15
     )
     default int filterCombatLevelUpThreshold()
     {
@@ -245,18 +255,19 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Default Message",
             description = "Removes the default message when logging in from clan broadcast",
             section = filterSectionGeneral,
-            position = 15
+            position = 16
     )
     default boolean filterDefaultMessage()
     {
         return false;
     }
+
     @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
             description = "Using comma separation e.g. 'Chambers of Xeric, Theatre of Blood' if anything matches these search terms it would be removed from Clan Broadcast (case insensitive)",
             section = filterSectionGeneral,
-            position = 16
+            position = 17
     )
     default String customFilters()
     {
@@ -347,7 +358,6 @@ public interface GuildSpamFilterConfig extends Config
     {
         return 1444;
     }
-
 
     // PvM
     @ConfigItem(

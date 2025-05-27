@@ -2,6 +2,7 @@ package com.GuildSpamFilter.Handlers;
 
 import com.GuildSpamFilter.Models.Categori;
 import com.GuildSpamFilter.Models.Section;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -65,7 +66,7 @@ public class CollectionLogHandler
             categoris.add(categori);
         }
 
-        for (Categori categori: categoris)
+        for (Categori categori : categoris)
         {
             for (Section section : categori.sections)
             {
