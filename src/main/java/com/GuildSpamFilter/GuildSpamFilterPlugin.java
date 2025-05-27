@@ -31,8 +31,24 @@ import java.util.Map;
 @Slf4j
 @PluginDescriptor(
         name = "Clan Spam Filter",
-        tags = {"Spam filter", "Clan spam filter", "Spam", "Filter", "Guild Spam Filter", "Guild", "Clan"},
-        description = "Remove broadcasts from clan chat"
+        tags = {
+                "Spam filter",
+                "Clan spam filter",
+                "Spam",
+                "Filter",
+                "Guild Spam Filter",
+                "Guild",
+                "Clan",
+                "Less clutter",
+                "Organized chat",
+                "Selective filtering",
+                "Chat customization",
+                "Filter clan messages",
+                "Remove spam messages",
+                "Chat cleanup",
+                "Broadcast blocker"
+        },
+        description = "Clan chat filter to hide unwanted broadcasts and reduce chat clutter. Customize which messages to show or hide including: drops (with GP thresholds), personal bests, pets, level ups, XP milestones, collection log items, achievement/combat diaries, raid loot, quest completions, and more. Features player whitelisting, custom filters, and granular threshold controls for a cleaner clan chat experience."
 )
 public class GuildSpamFilterPlugin extends Plugin
 {
@@ -144,12 +160,14 @@ public class GuildSpamFilterPlugin extends Plugin
     private void UpdatePbsToIncludeOrExclude()
     {
         pbsToIncludeOrExclude.clear();
-        String[] values = config.pbsToIncludeOrExclude().split(",");
+        String[] values = config.pbsToIncludeOrExclude()
+                                .split(",");
         if (values.length > 0)
         {
             for (String value : values)
             {
-                value = value.trim().toLowerCase();
+                value = value.trim()
+                             .toLowerCase();
                 if (value.length() > 0)
                 {
                     pbsToIncludeOrExclude.add(value);
@@ -163,12 +181,14 @@ public class GuildSpamFilterPlugin extends Plugin
     private void UpdateCustomFilters()
     {
         customFilters.clear();
-        String[] values = config.customFilters().split(",");
+        String[] values = config.customFilters()
+                                .split(",");
         if (values.length > 0)
         {
             for (String value : values)
             {
-                value = value.trim().toLowerCase();
+                value = value.trim()
+                             .toLowerCase();
                 if (value.length() > 0)
                 {
                     customFilters.add(value);
@@ -179,16 +199,17 @@ public class GuildSpamFilterPlugin extends Plugin
         log.debug("New list: " + String.join(", ", customFilters));
     }
 
-
     private void UpdateAlwaysIncludedPlayerIgnsFromBroadcasts()
     {
         alwaysIncludedPlayerNames.clear();
-        String[] values = config.excludedPlayerNames().split(",");
+        String[] values = config.excludedPlayerNames()
+                                .split(",");
         if (values.length > 0)
         {
             for (String value : values)
             {
-                value = value.trim().toLowerCase();
+                value = value.trim()
+                             .toLowerCase();
                 if (value.length() > 0)
                 {
                     alwaysIncludedPlayerNames.add(value);
@@ -222,15 +243,18 @@ public class GuildSpamFilterPlugin extends Plugin
     @Subscribe
     public void onConfigChanged(ConfigChanged event)
     {
-        if (event.getKey().equals("pbsToIncludeOrExclude"))
+        if (event.getKey()
+                 .equals("pbsToIncludeOrExclude"))
         {
             UpdatePbsToIncludeOrExclude();
         }
-        else if (event.getKey().equals("customFilters"))
+        else if (event.getKey()
+                      .equals("customFilters"))
         {
             UpdateCustomFilters();
         }
-        else if (event.getKey().equals("excludedPlayerNames"))
+        else if (event.getKey()
+                      .equals("excludedPlayerNames"))
         {
             UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
         }
@@ -239,7 +263,8 @@ public class GuildSpamFilterPlugin extends Plugin
     @Subscribe
     public void onScriptCallbackEvent(ScriptCallbackEvent event)
     {
-        if (!event.getEventName().equals("chatFilterCheck"))
+        if (!event.getEventName()
+                  .equals("chatFilterCheck"))
         {
             return;
         }
@@ -253,6 +278,7 @@ public class GuildSpamFilterPlugin extends Plugin
         int intStackSize = client.getIntStackSize();
         String[] stringStack = client.getStringStack();
         int stringStackSize = client.getStringStackSize();
+
         if (intStack.length < intStackSize - 3 || stringStack.length < stringStackSize - 1)
         {
             return;
@@ -268,6 +294,50 @@ public class GuildSpamFilterPlugin extends Plugin
         String message = stringStack[stringStackSize - 1].trim();
         log.debug("Broadcast message: " + message);
 
+        // Check if message should be filtered and update stack accordingly
+        if (shouldFilterMessage(message, intStack, intStackSize))
+        {
+            intStack[intStackSize - 3] = 0;
+        }
+
+        stringStack[stringStackSize - 1] = message;
+    }
+
+    private boolean shouldFilterMessage(String message, int[] intStack, int intStackSize)
+    {
+        // Always included players check
+        if (isAlwaysIncludedPlayer(message))
+        {
+            return false;
+        }
+
+        // Check all filter conditions
+        return filterLeaguesBroadcasts(message) ||
+                filterPersonalBests(message) ||
+                filterRaidDrops(message) ||
+                filterRegularDrops(message) ||
+                filterPets(message) ||
+                filterMaxTotal(message) ||
+                filterTotalLevelMilestone(message) ||
+                filterXpMilestone(message) ||
+                filterLevelUp(message) ||
+                filterCollectionLog(message) ||
+                filterNewClanMember(message) ||
+                filterDefaultMessage(message) ||
+                filterRareDrops(message) ||
+                filterQuestComplete(message) ||
+                filterHardcoreDeath(message) ||
+                filterClanMemberKicked(message) ||
+                filterPlayerDied(message) ||
+                filterPlayerKill(message) ||
+                filterCombatLevelUp(message) ||
+                filterCombatDiaries(message) ||
+                filterAchievementDiaries(message) ||
+                filterCustomFilters(message);
+    }
+
+    private boolean isAlwaysIncludedPlayer(String message)
+    {
         if (alwaysIncludedPlayerNames.size() > 0)
         {
             String lowercaseBroadcastMessage = message.toLowerCase();
@@ -276,78 +346,103 @@ public class GuildSpamFilterPlugin extends Plugin
                 if (isBroadcastMessageForPlayer(playerName, lowercaseBroadcastMessage))
                 {
                     log.debug("New broadcast for player detected skipping it.. Player name was: " + playerName);
-                    return;
+                    return true;
                 }
             }
         }
 
+        return false;
+    }
+
+    private boolean filterLeaguesBroadcasts(String message)
+    {
         if (config.filterLeaguesBroadcasts() && message.contains("<img=22>"))
         {
             log.debug("Leagues broadcast detected..");
-            intStack[intStackSize - 3] = 0;
-            return;
+            return true;
         }
-        else if (config.filterPb() && message.contains("has achieved a new"))
+
+        return false;
+    }
+
+    private boolean filterPersonalBests(String message)
+    {
+        if (config.filterPb() && message.contains("has achieved a new"))
         {
             log.debug("New PB detected.. Mode was set to: " + config.pbToIncludeOrExcludeEnum());
             String partWithoutPlayerName = message.substring(12);
             String lowercaseMessage = partWithoutPlayerName.toLowerCase();
+
             switch (config.pbToIncludeOrExcludeEnum())
             {
                 case EXCLUDE_ALL_EXCEPT:
-                {
-                    boolean found = false;
-                    if (pbsToIncludeOrExclude.size() > 0)
-                    {
-                        for (String text : pbsToIncludeOrExclude)
-                        {
-                            if (lowercaseMessage.contains(text))
-                            {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!found)
-                    {
-                        log.debug("No match found removing it..");
-                        intStack[intStackSize - 3] = 0;
-                        return;
-                    }
-                    break;
-                }
+                    return shouldExcludeAllExcept(lowercaseMessage);
                 case INCLUDE_ALL_EXCEPT:
-                {
-                    boolean found = false;
-                    if (pbsToIncludeOrExclude.size() > 0)
-                    {
-                        for (String text : pbsToIncludeOrExclude)
-                        {
-                            if (lowercaseMessage.contains(text))
-                            {
-                                found = true;
-                                break;
-                            }
-                        }
-                    }
+                    return shouldIncludeAllExcept(lowercaseMessage);
+            }
+        }
 
-                    if (found)
-                    {
-                        log.debug("Match found removing it..");
-                        intStack[intStackSize - 3] = 0;
-                        return;
-                    }
+        return false;
+    }
+
+    private boolean shouldExcludeAllExcept(String lowercaseMessage)
+    {
+        boolean found = false;
+        if (pbsToIncludeOrExclude.size() > 0)
+        {
+            for (String text : pbsToIncludeOrExclude)
+            {
+                if (lowercaseMessage.contains(text))
+                {
+                    found = true;
                     break;
                 }
             }
         }
-        else if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
+
+        if (!found)
+        {
+            log.debug("No match found removing it..");
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean shouldIncludeAllExcept(String lowercaseMessage)
+    {
+        boolean found = false;
+        if (pbsToIncludeOrExclude.size() > 0)
+        {
+            for (String text : pbsToIncludeOrExclude)
+            {
+                if (lowercaseMessage.contains(text))
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found)
+        {
+            log.debug("Match found removing it..");
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean filterRaidDrops(String message)
+    {
+        if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
         {
             log.debug("New raid loot detected..");
             int index = message.lastIndexOf(":");
             String itemPart = message.substring(index);
-            String item = itemPart.substring(2, itemPart.length() - 1).toLowerCase();
+            String item = itemPart.substring(2, itemPart.length() - 1)
+                                  .toLowerCase();
+
             if (raidItemPrices.containsKey(item))
             {
                 Integer gpValue = raidItemPrices.get(item);
@@ -355,48 +450,77 @@ public class GuildSpamFilterPlugin extends Plugin
                         gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
                 {
                     log.debug("Raid loot was below threshold: " + gpValue + " removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
         }
-        else if (config.filterRegularDrops() && message.contains("received a drop"))
+
+        return false;
+    }
+
+    private boolean filterRegularDrops(String message)
+    {
+        if (config.filterRegularDrops() && message.contains("received a drop"))
         {
             log.debug("New drop detected..");
             int index = message.indexOf("(");
             int index2 = message.indexOf(")");
+
             if (index != -1 && index2 != -1)
             {
-                String part = message.substring(index + 1, index2).replace(",", "").replace("coins", "").trim();
+                String part = message.substring(index + 1, index2)
+                                     .replace(",", "")
+                                     .replace("coins", "")
+                                     .trim();
                 long gpValue = Long.parseLong(part);
                 if (gpValue < config.lootGpThreshold() ||
                         gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
                 {
                     log.debug("Loot was below threshold: " + gpValue + " removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("Loot detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterPets() &&
+
+        return false;
+    }
+
+    private boolean filterPets(String message)
+    {
+        if (config.filterPets() &&
                 (message.contains("has a funny feeling") || message.contains("acquired something special")))
         {
             log.debug("New pet detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterMaxTotal() && message.contains("has reached the highest possible total level of"))
+
+        return false;
+    }
+
+    private boolean filterMaxTotal(String message)
+    {
+        if (config.filterMaxTotal() && message.contains("has reached the highest possible total level of"))
         {
             log.debug("New max total detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterTotalLevelMilestone() && message.contains("has reached a total"))
+
+        return false;
+    }
+
+    private boolean filterTotalLevelMilestone(String message)
+    {
+        if (config.filterTotalLevelMilestone() && message.contains("has reached a total"))
         {
             log.debug("New total level detected removing it..");
             String textToFind = "total level of ";
             int index = message.indexOf(textToFind);
+
             if (index != -1)
             {
                 String part = message.substring(index + textToFind.length(), message.length() - 1);
@@ -404,43 +528,58 @@ public class GuildSpamFilterPlugin extends Plugin
                 if (totalLevel < config.totalLevelThreshold())
                 {
                     log.debug("Total level was below threshold: " + totalLevel + " removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("Total level detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterXpMilestone() && message.contains("has reached") && message.contains("XP in"))
+
+        return false;
+    }
+
+    private boolean filterXpMilestone(String message)
+    {
+        if (config.filterXpMilestone() && message.contains("has reached") && message.contains("XP in"))
         {
             log.debug("New XP milestone detected..");
             int index = message.indexOf("reached");
             int index2 = message.indexOf("XP in");
+
             if (index != -1 && index2 != -1)
             {
-                String part = message.substring(index + 8, index2 - 1).replace(",", "");
+                String part = message.substring(index + 8, index2 - 1)
+                                     .replace(",", "");
                 long xp = Long.parseLong(part);
                 if (xp < config.xpMilestoneThreshold())
                 {
                     log.debug("XP milestone was below threshold: " + xp + " removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("XP milestone detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterLevelUp() &&
+
+        return false;
+    }
+
+    private boolean filterLevelUp(String message)
+    {
+        if (config.filterLevelUp() &&
                 message.contains("has reached") &&
                 message.contains("level") &&
                 !message.contains("combat level"))
         {
             log.debug("New level up detected..");
             int index = message.indexOf("level");
+
             if (index != -1)
             {
                 String part = message.substring(index + 6, message.length() - 1);
@@ -448,178 +587,244 @@ public class GuildSpamFilterPlugin extends Plugin
                 if (level < config.levelThreshold())
                 {
                     log.debug("Level was below threshold: " + level + " removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("Level detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if ((config.filterCollectionLogBosses() ||
-                          config.filterCollectionLogRaids() ||
-                          config.filterCollectionLogClues() ||
-                          config.filterCollectionLogMinigames() ||
-                          config.filterCollectionLogOther() ||
-                          config.enableCollectionLogThreshold()) && message.contains("a new collection log item"))
+
+        return false;
+    }
+
+    private boolean filterCollectionLog(String message)
+    {
+        if ((config.filterCollectionLogBosses() ||
+                     config.filterCollectionLogRaids() ||
+                     config.filterCollectionLogClues() ||
+                     config.filterCollectionLogMinigames() ||
+                     config.filterCollectionLogOther() ||
+                     config.enableCollectionLogThreshold()) && message.contains("a new collection log item"))
         {
             int index = message.lastIndexOf("(");
             int index2 = message.lastIndexOf("/");
+
             if (index != -1 && index2 != -1)
             {
-                String part = message.substring(index + 1, index2).trim();
+                String part = message.substring(index + 1, index2)
+                                     .trim();
                 int collectionLogs = Integer.parseInt(part);
+
                 if (config.enableCollectionLogThreshold() && config.filterCollectionLogThreshold() > collectionLogs)
                 {
                     log.debug("Collection long amount was below threshold: " + collectionLogs + " removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
                 else
                 {
-                    boolean isFound = false;
-                    index = message.indexOf(":") + 1;
-                    index2 = message.lastIndexOf("(");
-                    part = message.substring(index, index2).trim();
-                    for (Categori categori : categoris)
-                    {
-                        switch (categori.name)
-                        {
-                            case "Bosses":
-                                if (config.filterCollectionLogBosses() && categori.allItems.contains(part))
-                                {
-                                    log.debug("New collection log item detected removing it..");
-                                    intStack[intStackSize - 3] = 0;
-                                    isFound = true;
-                                }
-                                break;
-                            case "Raids":
-                                if (config.filterCollectionLogRaids() && categori.allItems.contains(part))
-                                {
-                                    log.debug("New collection log item detected removing it..");
-                                    intStack[intStackSize - 3] = 0;
-                                    isFound = true;
-                                }
-                                break;
-                            case "Clues":
-                                if (config.filterCollectionLogClues() && categori.allItems.contains(part))
-                                {
-                                    log.debug("New collection log item detected removing it..");
-                                    intStack[intStackSize - 3] = 0;
-                                    isFound = true;
-                                }
-                                break;
-                            case "Minigames":
-                                if (config.filterCollectionLogMinigames() && categori.allItems.contains(part))
-                                {
-                                    log.debug("New collection log item detected removing it..");
-                                    intStack[intStackSize - 3] = 0;
-                                    isFound = true;
-                                }
-                                break;
-                            case "Other":
-                                if (config.filterCollectionLogOther() && categori.allItems.contains(part))
-                                {
-                                    log.debug("New collection log item detected removing it..");
-                                    intStack[intStackSize - 3] = 0;
-                                    isFound = true;
-                                }
-                                break;
-                        }
-
-                        if (isFound)
-                        {
-                            break;
-                        }
-                    }
+                    return filterCollectionLogByCategory(message);
                 }
             }
             else
             {
                 log.debug("New collection log item detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterNewClanMember() && message.contains("has been invited into the"))
+
+        return false;
+    }
+
+    private boolean filterCollectionLogByCategory(String message)
+    {
+        int index = message.indexOf(":") + 1;
+        int index2 = message.lastIndexOf("(");
+        String part = message.substring(index, index2)
+                             .trim();
+
+        for (Categori categori : categoris)
+        {
+            switch (categori.name)
+            {
+                case "Bosses":
+                    if (config.filterCollectionLogBosses() && categori.allItems.contains(part))
+                    {
+                        log.debug("New collection log item detected removing it..");
+                        return true;
+                    }
+                    break;
+                case "Raids":
+                    if (config.filterCollectionLogRaids() && categori.allItems.contains(part))
+                    {
+                        log.debug("New collection log item detected removing it..");
+                        return true;
+                    }
+                    break;
+                case "Clues":
+                    if (config.filterCollectionLogClues() && categori.allItems.contains(part))
+                    {
+                        log.debug("New collection log item detected removing it..");
+                        return true;
+                    }
+                    break;
+                case "Minigames":
+                    if (config.filterCollectionLogMinigames() && categori.allItems.contains(part))
+                    {
+                        log.debug("New collection log item detected removing it..");
+                        return true;
+                    }
+                    break;
+                case "Other":
+                    if (config.filterCollectionLogOther() && categori.allItems.contains(part))
+                    {
+                        log.debug("New collection log item detected removing it..");
+                        return true;
+                    }
+                    break;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean filterNewClanMember(String message)
+    {
+        if (config.filterNewClanMember() && message.contains("has been invited into the"))
         {
             log.debug("New clan member detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterDefaultMessage() && message.contains("start each line of chat"))
+
+        return false;
+    }
+
+    private boolean filterDefaultMessage(String message)
+    {
+        if (config.filterDefaultMessage() && message.contains("start each line of chat"))
         {
             log.debug("New default message detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterRareDrops() && message.contains("received a rare drop"))
+
+        return false;
+    }
+
+    private boolean filterRareDrops(String message)
+    {
+        if (config.filterRareDrops() && message.contains("received a rare drop"))
         {
             log.debug("New rare drop detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterQuestComplete() && message.contains("has completed a quest"))
+
+        return false;
+    }
+
+    private boolean filterQuestComplete(String message)
+    {
+        if (config.filterQuestComplete() && message.contains("has completed a quest"))
         {
             log.debug("New quest completion detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterHardcoreDeath() && message.contains("and lost their hardcore"))
+
+        return false;
+    }
+
+    private boolean filterHardcoreDeath(String message)
+    {
+        if (config.filterHardcoreDeath() && message.contains("and lost their hardcore"))
         {
             log.debug("New hardcore death detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterClanMemberKicked() && message.contains("has expelled"))
+
+        return false;
+    }
+
+    private boolean filterClanMemberKicked(String message)
+    {
+        if (config.filterClanMemberKicked() && message.contains("has expelled"))
         {
             log.debug("New kicked clan member detected removing it..");
-            intStack[intStackSize - 3] = 0;
+            return true;
         }
-        else if (config.filterPlayerDied() && message.contains("has been defeated by"))
+
+        return false;
+    }
+
+    private boolean filterPlayerDied(String message)
+    {
+        if (config.filterPlayerDied() && message.contains("has been defeated by"))
         {
             int left = message.indexOf("(");
             int right = message.indexOf(")");
+
             if (left != -1 && right != -1)
             {
-                String part = message.substring(left + 1, right - 6).replace(",", "");
+                String part = message.substring(left + 1, right - 6)
+                                     .replace(",", "");
                 int value = Integer.parseInt(part);
                 if (value < config.playerDiedThreshold())
                 {
                     log.debug("New player has been defeated by another player detected removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("New player has been defeated by another player detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterPlayerKill() && message.contains("has defeated"))
+
+        return false;
+    }
+
+    private boolean filterPlayerKill(String message)
+    {
+        if (config.filterPlayerKill() && message.contains("has defeated"))
         {
             int left = message.indexOf("(");
             int right = message.indexOf(")");
+
             if (left != -1 && right != -1)
             {
-                String part = message.substring(left + 1, right - 6).replace(",", "");
+                String part = message.substring(left + 1, right - 6)
+                                     .replace(",", "");
                 int value = Integer.parseInt(part);
                 if (value < config.playerKillThreshold())
                 {
                     log.debug("New player has been defeated by another player detected removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("New player has been defeated by another player detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterCombatLevelUpMessage() &&
+
+        return false;
+    }
+
+    private boolean filterCombatLevelUp(String message)
+    {
+        if (config.filterCombatLevelUpMessage() &&
                 (message.contains("has reached combat level") || message.contains("highest possible combat level")))
         {
             boolean isMaxCombatMessage = message.contains("highest possible combat level");
+
             if (isMaxCombatMessage)
             {
                 if (config.filterCombatLevelUpThreshold() > 126)
                 {
                     log.debug("New max combat level up message detected removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
@@ -633,132 +838,154 @@ public class GuildSpamFilterPlugin extends Plugin
                     if (config.filterCombatLevelUpThreshold() > combatLevel)
                     {
                         log.debug("New combat level up message detected removing it..");
-                        intStack[intStackSize - 3] = 0;
+                        return true;
                     }
                 }
                 else
                 {
                     log.debug("New combat level up message detected removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
         }
-        else if ((config.filterCombatDiaries() && message.contains("Combat Achievement")) ||
+
+        return false;
+    }
+
+    private boolean filterCombatDiaries(String message)
+    {
+        if ((config.filterCombatDiaries() && message.contains("Combat Achievement")) ||
                 (config.filterCombatDiaryTasks() && message.contains("combat task")))
         {
             log.debug("New combat achievement diaries detected..");
-            int index = -1;
-            String indexText = "";
-            if (config.filterCombatDiaries() && message.contains("Combat Achievement"))
-            {
-                indexText = "the";
-                index = message.indexOf(indexText);
-            }
-            else if (config.filterCombatDiaryTasks() && message.contains("combat task"))
-            {
-                if (message.contains("completed an"))
-                {
-                    indexText = "completed an";
-                }
-                else if (message.contains("completed a"))
-                {
-                    indexText = "completed a";
-                }
+            return processCombatDiaryFiltering(message);
+        }
 
-                index = message.indexOf(indexText);
-            }
+        return false;
+    }
 
-            if (index != -1)
+    private boolean processCombatDiaryFiltering(String message)
+    {
+        int index = -1;
+        String indexText = "";
+
+        if (config.filterCombatDiaries() && message.contains("Combat Achievement"))
+        {
+            indexText = "the";
+            index = message.indexOf(indexText);
+        }
+        else if (config.filterCombatDiaryTasks() && message.contains("combat task"))
+        {
+            if (message.contains("completed an"))
             {
-                String part = message.substring(index + indexText.length() + 1);
-                int index2 = part.indexOf(" ");
-                if (index2 != -1)
-                {
-                    String combatDiaryLevel = part.substring(0, index2);
-                    combatDiaryLevel = combatDiaryLevel.substring(0, 1).toUpperCase() + combatDiaryLevel.substring(1);
-                    if (config.combatDiariesThreshold() == CombatDiariesEnum.ALL)
-                    {
-                        log.debug("Combat Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                combatDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.combatDiariesThreshold() == CombatDiariesEnum.GRANDMASTER &&
-                            (combatDiaryLevel.equals(CombatDiariesEnum.MASTER.toString()) ||
-                                     combatDiaryLevel.equals(CombatDiariesEnum.ELITE.toString()) ||
-                                     combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
-                                     combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                                     combatDiaryLevel.equals(EASY)))
-                    {
-                        log.debug("Combat Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                combatDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.combatDiariesThreshold() == CombatDiariesEnum.MASTER &&
-                            (combatDiaryLevel.equals(CombatDiariesEnum.ELITE.toString()) ||
-                                     combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
-                                     combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                                     combatDiaryLevel.equals(EASY)))
-                    {
-                        log.debug("Combat Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                combatDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.combatDiariesThreshold() == CombatDiariesEnum.ELITE &&
-                            (combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
-                                     combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                                     combatDiaryLevel.equals(EASY)))
-                    {
-                        log.debug("Combat Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                combatDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.combatDiariesThreshold() == CombatDiariesEnum.HARD &&
-                            (combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                                     combatDiaryLevel.equals(EASY)))
-                    {
-                        log.debug("Combat Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                combatDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.combatDiariesThreshold() == CombatDiariesEnum.MEDIUM &&
-                            (combatDiaryLevel.equals(EASY)))
-                    {
-                        log.debug("Combat Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                combatDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                }
-                else
-                {
-                    log.debug("Combat Achievement Diaries detected removing it..");
-                    intStack[intStackSize - 3] = 0;
-                }
+                indexText = "completed an";
+            }
+            else if (message.contains("completed a"))
+            {
+                indexText = "completed a";
+            }
+            index = message.indexOf(indexText);
+        }
+
+        if (index != -1)
+        {
+            String part = message.substring(index + indexText.length() + 1);
+            int index2 = part.indexOf(" ");
+            if (index2 != -1)
+            {
+                String combatDiaryLevel = part.substring(0, index2);
+                combatDiaryLevel = combatDiaryLevel.substring(0, 1)
+                                                   .toUpperCase() + combatDiaryLevel.substring(1);
+                return shouldFilterCombatDiary(combatDiaryLevel);
             }
             else
             {
                 log.debug("Combat Achievement Diaries detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
-        else if (config.filterAchievementDiaries() &&
+
+        return false;
+    }
+
+    private boolean shouldFilterCombatDiary(String combatDiaryLevel)
+    {
+        CombatDiariesEnum combatDiaryThreshold = config.combatDiariesThreshold();
+
+        if (combatDiaryThreshold == CombatDiariesEnum.ALL)
+        {
+            log.debug("Combat Achievement Diaries Threshold was set to: " +
+                    combatDiaryThreshold +
+                    " and diary was: " +
+                    combatDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (combatDiaryThreshold == CombatDiariesEnum.GRANDMASTER &&
+                (combatDiaryLevel.equals(CombatDiariesEnum.MASTER.toString()) ||
+                         combatDiaryLevel.equals(CombatDiariesEnum.ELITE.toString()) ||
+                         combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
+                         combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
+                         combatDiaryLevel.equals(EASY)))
+        {
+            log.debug("Combat Achievement Diaries Threshold was set to: " +
+                    combatDiaryThreshold +
+                    " and diary was: " +
+                    combatDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (combatDiaryThreshold == CombatDiariesEnum.MASTER &&
+                (combatDiaryLevel.equals(CombatDiariesEnum.ELITE.toString()) ||
+                         combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
+                         combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
+                         combatDiaryLevel.equals(EASY)))
+        {
+            log.debug("Combat Achievement Diaries Threshold was set to: " +
+                    combatDiaryThreshold +
+                    " and diary was: " +
+                    combatDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (combatDiaryThreshold == CombatDiariesEnum.ELITE &&
+                (combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
+                         combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
+                         combatDiaryLevel.equals(EASY)))
+        {
+            log.debug("Combat Achievement Diaries Threshold was set to: " +
+                    combatDiaryThreshold +
+                    " and diary was: " +
+                    combatDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (combatDiaryThreshold == CombatDiariesEnum.HARD &&
+                (combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) || combatDiaryLevel.equals(EASY)))
+        {
+            log.debug("Combat Achievement Diaries Threshold was set to: " +
+                    combatDiaryThreshold +
+                    " and diary was: " +
+                    combatDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (combatDiaryThreshold == CombatDiariesEnum.MEDIUM && combatDiaryLevel.equals(EASY))
+        {
+            log.debug("Combat Achievement Diaries Threshold was set to: " +
+                    combatDiaryThreshold +
+                    " and diary was: " +
+                    combatDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean filterAchievementDiaries(String message)
+    {
+        if (config.filterAchievementDiaries() &&
                 (message.contains(EASY) ||
                          message.contains(AchievementDiariesEnum.MEDIUM.toString()) ||
                          message.contains(AchievementDiariesEnum.HARD.toString()) ||
@@ -773,83 +1000,89 @@ public class GuildSpamFilterPlugin extends Plugin
                 if (index2 != -1)
                 {
                     String achievementDiaryLevel = part.substring(0, index2);
-                    if (config.achievementDiariesThreshold() == AchievementDiariesEnum.ALL)
-                    {
-                        log.debug("Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                achievementDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.achievementDiariesThreshold() == AchievementDiariesEnum.ELITE &&
-                            (achievementDiaryLevel.equals(EASY) ||
-                                     achievementDiaryLevel.equals(AchievementDiariesEnum.MEDIUM.toString()) ||
-                                     achievementDiaryLevel.equals(AchievementDiariesEnum.HARD.toString())))
-                    {
-                        log.debug("Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                achievementDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.achievementDiariesThreshold() == AchievementDiariesEnum.HARD &&
-                            (achievementDiaryLevel.equals(EASY) ||
-                                     achievementDiaryLevel.equals(AchievementDiariesEnum.MEDIUM.toString())))
-                    {
-                        log.debug("Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                achievementDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
-                    else if (config.achievementDiariesThreshold() == AchievementDiariesEnum.MEDIUM &&
-                            (achievementDiaryLevel.equals(EASY)))
-                    {
-                        log.debug("Achievement Diaries Threshold was set to: " +
-                                config.achievementDiariesThreshold() +
-                                "and diary was: " +
-                                achievementDiaryLevel +
-                                " removing it..");
-                        intStack[intStackSize - 3] = 0;
-                    }
+                    return shouldFilterAchievementDiary(achievementDiaryLevel);
                 }
                 else
                 {
                     log.debug("Achievement Diaries detected removing it..");
-                    intStack[intStackSize - 3] = 0;
+                    return true;
                 }
             }
             else
             {
                 log.debug("Achievement Diaries detected removing it..");
-                intStack[intStackSize - 3] = 0;
+                return true;
             }
         }
 
+        return false;
+    }
+
+    private boolean shouldFilterAchievementDiary(String achievementDiaryLevel)
+    {
+        AchievementDiariesEnum threshold = config.achievementDiariesThreshold();
+
+        if (threshold == AchievementDiariesEnum.ALL)
+        {
+            log.debug("Achievement Diaries Threshold was set to: " +
+                    threshold +
+                    " and diary was: " +
+                    achievementDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (threshold == AchievementDiariesEnum.ELITE &&
+                (achievementDiaryLevel.equals(EASY) ||
+                         achievementDiaryLevel.equals(AchievementDiariesEnum.MEDIUM.toString()) ||
+                         achievementDiaryLevel.equals(AchievementDiariesEnum.HARD.toString())))
+        {
+            log.debug("Achievement Diaries Threshold was set to: " +
+                    threshold +
+                    " and diary was: " +
+                    achievementDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (threshold == AchievementDiariesEnum.HARD &&
+                (achievementDiaryLevel.equals(EASY) ||
+                         achievementDiaryLevel.equals(AchievementDiariesEnum.MEDIUM.toString())))
+        {
+            log.debug("Achievement Diaries Threshold was set to: " +
+                    threshold +
+                    " and diary was: " +
+                    achievementDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+        else if (threshold == AchievementDiariesEnum.MEDIUM && achievementDiaryLevel.equals(EASY))
+        {
+            log.debug("Achievement Diaries Threshold was set to: " +
+                    threshold +
+                    " and diary was: " +
+                    achievementDiaryLevel +
+                    " removing it..");
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean filterCustomFilters(String message)
+    {
         if (customFilters.size() > 0)
         {
             log.debug("Custom filter was not empty scanning..");
             String lowercaseMessage = message.toLowerCase();
-            boolean found = false;
             for (String text : customFilters)
             {
                 if (lowercaseMessage.contains(text))
                 {
-                    found = true;
-                    break;
+                    log.debug("Custom filter match found removing it..");
+                    return true;
                 }
-            }
-
-            if (found)
-            {
-                log.debug("Custom filter match found removing it..");
-                intStack[intStackSize - 3] = 0;
             }
         }
 
-        stringStack[stringStackSize - 1] = message;
+        return false;
     }
 }
