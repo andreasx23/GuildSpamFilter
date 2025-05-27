@@ -578,11 +578,12 @@ public class GuildSpamFilterPlugin extends Plugin
                 !message.contains("combat level"))
         {
             log.debug("New level up detected..");
-            int index = message.indexOf("level");
+            String textToFind = "level of";
+            int index = message.indexOf(textToFind);
 
             if (index != -1)
             {
-                String part = message.substring(index + 6, message.length() - 1);
+                String part = message.substring(index + textToFind.length() + 1, message.length() - 1);
                 long level = Long.parseLong(part);
                 if (level < config.levelThreshold())
                 {
