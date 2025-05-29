@@ -7,13 +7,13 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum CombatDiariesEnum
 {
-    ALL("All", 0),
-    GRANDMASTER("Grandmaster", 1),
-    MASTER("Master", 2),
+    ALL("All", 6),
+    GRANDMASTER("Grandmaster", 5),
+    MASTER("Master", 4),
     ELITE("Elite", 3),
-    HARD("Hard", 4),
-    MEDIUM("Medium", 5);
-//    EASY("Easy", 6);
+    HARD("Hard", 2),
+    MEDIUM("Medium", 1);
+//    EASY("Easy", 0);
 
     private final String name;
     private final int mode;
@@ -22,5 +22,10 @@ public enum CombatDiariesEnum
     public String toString()
     {
         return name;
+    }
+
+    public int getId()
+    {
+        return mode;
     }
 }

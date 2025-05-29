@@ -295,7 +295,7 @@ public class GuildSpamFilterPlugin extends Plugin
         log.debug("Broadcast message: " + message);
 
         // Check if message should be filtered and update stack accordingly
-        if (shouldFilterMessage(message, intStack, intStackSize))
+        if (shouldFilterMessage(message))
         {
             intStack[intStackSize - 3] = 0;
         }
@@ -303,7 +303,7 @@ public class GuildSpamFilterPlugin extends Plugin
         stringStack[stringStackSize - 1] = message;
     }
 
-    private boolean shouldFilterMessage(String message, int[] intStack, int intStackSize)
+    private boolean shouldFilterMessage(String message)
     {
         // Always included players check
         if (isAlwaysIncludedPlayer(message))
@@ -763,7 +763,6 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             int left = message.indexOf("(");
             int right = message.indexOf(")");
-
             if (left != -1 && right != -1)
             {
                 String part = message.substring(left + 1, right - 6)
@@ -791,7 +790,6 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             int left = message.indexOf("(");
             int right = message.indexOf(")");
-
             if (left != -1 && right != -1)
             {
                 String part = message.substring(left + 1, right - 6)
@@ -819,7 +817,6 @@ public class GuildSpamFilterPlugin extends Plugin
                 (message.contains("has reached combat level") || message.contains("highest possible combat level")))
         {
             boolean isMaxCombatMessage = message.contains("highest possible combat level");
-
             if (isMaxCombatMessage)
             {
                 if (config.filterCombatLevelUpThreshold() > 126)
@@ -869,7 +866,6 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         int index = -1;
         String indexText = "";
-
         if (config.filterCombatDiaries() && message.contains("Combat Achievement"))
         {
             indexText = "the";
@@ -885,6 +881,7 @@ public class GuildSpamFilterPlugin extends Plugin
             {
                 indexText = "completed a";
             }
+
             index = message.indexOf(indexText);
         }
 
@@ -895,90 +892,23 @@ public class GuildSpamFilterPlugin extends Plugin
             if (index2 != -1)
             {
                 String combatDiaryLevel = part.substring(0, index2);
-                combatDiaryLevel = combatDiaryLevel.substring(0, 1)
-                                                   .toUpperCase() + combatDiaryLevel.substring(1);
-                return shouldFilterCombatDiary(combatDiaryLevel);
+                CombatDiariesEnum selectedCombatDiaryThreshold = config.combatDiariesThreshold();
+                CombatDiariesEnum messageCombatDiaryLevel = CombatDiariesEnum.valueOf(combatDiaryLevel.toUpperCase());
+                if (selectedCombatDiaryThreshold.getId() > messageCombatDiaryLevel.getId())
+                {
+                    log.debug("Combat Achievement diary threshold was set to: " +
+                            selectedCombatDiaryThreshold +
+                            " and the incoming Combat Achievement diary was: " +
+                            messageCombatDiaryLevel +
+                            " removing it..");
+                    return true;
+                }
             }
             else
             {
-                log.debug("Combat Achievement Diaries detected removing it..");
+                log.debug("Combat Achievement Diary detected removing it..");
                 return true;
             }
-        }
-
-        return false;
-    }
-
-    private boolean shouldFilterCombatDiary(String combatDiaryLevel)
-    {
-        CombatDiariesEnum combatDiaryThreshold = config.combatDiariesThreshold();
-
-        if (combatDiaryThreshold == CombatDiariesEnum.ALL)
-        {
-            log.debug("Combat Achievement Diaries Threshold was set to: " +
-                    combatDiaryThreshold +
-                    " and diary was: " +
-                    combatDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (combatDiaryThreshold == CombatDiariesEnum.GRANDMASTER &&
-                (combatDiaryLevel.equals(CombatDiariesEnum.MASTER.toString()) ||
-                         combatDiaryLevel.equals(CombatDiariesEnum.ELITE.toString()) ||
-                         combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
-                         combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                         combatDiaryLevel.equals(EASY)))
-        {
-            log.debug("Combat Achievement Diaries Threshold was set to: " +
-                    combatDiaryThreshold +
-                    " and diary was: " +
-                    combatDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (combatDiaryThreshold == CombatDiariesEnum.MASTER &&
-                (combatDiaryLevel.equals(CombatDiariesEnum.ELITE.toString()) ||
-                         combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
-                         combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                         combatDiaryLevel.equals(EASY)))
-        {
-            log.debug("Combat Achievement Diaries Threshold was set to: " +
-                    combatDiaryThreshold +
-                    " and diary was: " +
-                    combatDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (combatDiaryThreshold == CombatDiariesEnum.ELITE &&
-                (combatDiaryLevel.equals(CombatDiariesEnum.HARD.toString()) ||
-                         combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) ||
-                         combatDiaryLevel.equals(EASY)))
-        {
-            log.debug("Combat Achievement Diaries Threshold was set to: " +
-                    combatDiaryThreshold +
-                    " and diary was: " +
-                    combatDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (combatDiaryThreshold == CombatDiariesEnum.HARD &&
-                (combatDiaryLevel.equals(CombatDiariesEnum.MEDIUM.toString()) || combatDiaryLevel.equals(EASY)))
-        {
-            log.debug("Combat Achievement Diaries Threshold was set to: " +
-                    combatDiaryThreshold +
-                    " and diary was: " +
-                    combatDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (combatDiaryThreshold == CombatDiariesEnum.MEDIUM && combatDiaryLevel.equals(EASY))
-        {
-            log.debug("Combat Achievement Diaries Threshold was set to: " +
-                    combatDiaryThreshold +
-                    " and diary was: " +
-                    combatDiaryLevel +
-                    " removing it..");
-            return true;
         }
 
         return false;
@@ -992,77 +922,34 @@ public class GuildSpamFilterPlugin extends Plugin
                          message.contains(AchievementDiariesEnum.HARD.toString()) ||
                          message.contains(AchievementDiariesEnum.ELITE.toString())))
         {
-            log.debug("New achievement diaries detected..");
-            int index = message.indexOf("the");
+            log.debug("New achievement diary detected..");
+            String textToFind = "the";
+            int index = message.indexOf(textToFind);
             if (index != -1)
             {
-                String part = message.substring(index + 4);
+                String part = message.substring(index + textToFind.length() + 1);
                 int index2 = part.indexOf(" ");
                 if (index2 != -1)
                 {
                     String achievementDiaryLevel = part.substring(0, index2);
-                    return shouldFilterAchievementDiary(achievementDiaryLevel);
+                    AchievementDiariesEnum achievementDiaryThreshold = config.achievementDiariesThreshold();
+                    AchievementDiariesEnum messageAchievementDiaryLevel = AchievementDiariesEnum.valueOf(achievementDiaryLevel.toUpperCase());
+                    if (achievementDiaryThreshold.getId() > messageAchievementDiaryLevel.getId())
+                    {
+                        log.debug("Achievement diary threshold was set to: " +
+                                achievementDiaryThreshold +
+                                " and the incoming achievement diary was: " +
+                                messageAchievementDiaryLevel +
+                                " removing it..");
+                        return true;
+                    }
                 }
                 else
                 {
-                    log.debug("Achievement Diaries detected removing it..");
+                    log.debug("Achievement Diary detected removing it..");
                     return true;
                 }
             }
-            else
-            {
-                log.debug("Achievement Diaries detected removing it..");
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean shouldFilterAchievementDiary(String achievementDiaryLevel)
-    {
-        AchievementDiariesEnum threshold = config.achievementDiariesThreshold();
-
-        if (threshold == AchievementDiariesEnum.ALL)
-        {
-            log.debug("Achievement Diaries Threshold was set to: " +
-                    threshold +
-                    " and diary was: " +
-                    achievementDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (threshold == AchievementDiariesEnum.ELITE &&
-                (achievementDiaryLevel.equals(EASY) ||
-                         achievementDiaryLevel.equals(AchievementDiariesEnum.MEDIUM.toString()) ||
-                         achievementDiaryLevel.equals(AchievementDiariesEnum.HARD.toString())))
-        {
-            log.debug("Achievement Diaries Threshold was set to: " +
-                    threshold +
-                    " and diary was: " +
-                    achievementDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (threshold == AchievementDiariesEnum.HARD &&
-                (achievementDiaryLevel.equals(EASY) ||
-                         achievementDiaryLevel.equals(AchievementDiariesEnum.MEDIUM.toString())))
-        {
-            log.debug("Achievement Diaries Threshold was set to: " +
-                    threshold +
-                    " and diary was: " +
-                    achievementDiaryLevel +
-                    " removing it..");
-            return true;
-        }
-        else if (threshold == AchievementDiariesEnum.MEDIUM && achievementDiaryLevel.equals(EASY))
-        {
-            log.debug("Achievement Diaries Threshold was set to: " +
-                    threshold +
-                    " and diary was: " +
-                    achievementDiaryLevel +
-                    " removing it..");
-            return true;
         }
 
         return false;

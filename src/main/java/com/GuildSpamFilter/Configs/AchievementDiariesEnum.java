@@ -7,11 +7,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum AchievementDiariesEnum
 {
-    ALL("All", 0),
-    ELITE("Elite", 1),
+    ALL("All", 4),
+    ELITE("Elite", 3),
     HARD("Hard", 2),
-    MEDIUM("Medium", 3);
-//    EASY("Easy", 4);
+    MEDIUM("Medium", 1);
+//    EASY("Easy", 0);
 
     private final String name;
     private final int mode;
@@ -20,5 +20,10 @@ public enum AchievementDiariesEnum
     public String toString()
     {
         return name;
+    }
+
+    public int getId()
+    {
+        return mode;
     }
 }
