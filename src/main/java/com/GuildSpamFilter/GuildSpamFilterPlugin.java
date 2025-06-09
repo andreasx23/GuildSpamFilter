@@ -276,10 +276,10 @@ public class GuildSpamFilterPlugin extends Plugin
 
         int[] intStack = client.getIntStack();
         int intStackSize = client.getIntStackSize();
-        String[] stringStack = client.getStringStack();
-        int stringStackSize = client.getStringStackSize();
+        Object[] objectStack = client.getObjectStack();
+        int objectStackSize = client.getObjectStackSize();
 
-        if (intStack.length < intStackSize - 3 || stringStack.length < stringStackSize - 1)
+        if (intStack.length < intStackSize - 3 || objectStack.length < objectStackSize - 1)
         {
             return;
         }
@@ -291,7 +291,8 @@ public class GuildSpamFilterPlugin extends Plugin
             return;
         }
 
-        String message = stringStack[stringStackSize - 1].trim();
+        Object messageAsObject = objectStack[objectStackSize - 1];
+        String message = ((String)messageAsObject).trim();
         log.debug("Broadcast message: " + message);
 
         // Check if message should be filtered and update stack accordingly
@@ -300,7 +301,7 @@ public class GuildSpamFilterPlugin extends Plugin
             intStack[intStackSize - 3] = 0;
         }
 
-        stringStack[stringStackSize - 1] = message;
+        objectStack[objectStackSize - 1] = message;
     }
 
     private boolean shouldFilterMessage(String message)
