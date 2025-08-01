@@ -494,7 +494,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private boolean filterPets(String message)
     {
         if (config.filterPets() &&
-                (message.contains("has a funny feeling") || message.contains("acquired something special")))
+                (message.contains("has a funny feeling") || message.contains("acquired something special") || message.contains("something weird sneaking into")))
         {
             log.debug("New pet detected removing it..");
             return true;
