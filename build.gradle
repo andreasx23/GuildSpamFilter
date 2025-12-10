@@ -24,7 +24,7 @@ dependencies {
 }
 
 group = 'com.GuildSpamFilter'
-version = '1.4'
+version = '1.5'
 sourceCompatibility = "10"
 
 tasks.withType(JavaCompile) {

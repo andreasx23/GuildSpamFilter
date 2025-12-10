@@ -436,13 +436,13 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "totalLevelThreshold",
             name = "Total Level Threshold",
-            description = "Set the minimum total level required to filter milestone broadcasts (Default: 2278)",
+            description = "Set the minimum total level required to filter milestone broadcasts (Default: 2376)",
             section = filterSectionSkilling,
             position = 1
     )
     default int totalLevelThreshold()
     {
-        return 2278;
+        return 2376;
     }
 
     @ConfigItem(
