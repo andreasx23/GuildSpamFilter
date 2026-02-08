@@ -443,10 +443,11 @@ public class GuildSpamFilterPlugin extends Plugin
         if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
         {
             log.debug("New raid loot detected..");
-            int index = message.lastIndexOf(":");
-            String itemPart = message.substring(index);
-            String item = itemPart.substring(2, itemPart.length() - 1)
-                                  .toLowerCase();
+            int startIndex = message.lastIndexOf(":");
+            String itemStartPart = message.substring(startIndex);
+            int endIndex = itemStartPart.lastIndexOf("(");
+            String itemPart = itemStartPart.substring(1, endIndex);
+            String item = itemPart.trim().toLowerCase();
 
             if (raidItemPrices.containsKey(item))
             {
