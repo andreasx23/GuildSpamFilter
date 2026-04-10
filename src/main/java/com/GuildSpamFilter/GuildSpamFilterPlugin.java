@@ -469,8 +469,8 @@ public class GuildSpamFilterPlugin extends Plugin
         if (config.filterRegularDrops() && message.contains("received a drop"))
         {
             log.debug("New drop detected..");
-            int index = message.indexOf("(");
-            int index2 = message.indexOf(")");
+            int index = message.lastIndexOf("(");
+            int index2 = message.lastIndexOf(")");
 
             if (index != -1 && index2 != -1)
             {
