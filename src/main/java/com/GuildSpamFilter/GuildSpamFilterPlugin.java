@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.events.ScriptCallbackEvent;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -56,6 +57,8 @@ public class GuildSpamFilterPlugin extends Plugin
 
     @Inject
     private Client client;
+    @Inject
+    private ClientThread clientThread;
     @Inject
     private GuildSpamFilterConfig config;
     private HashSet<String> pbsToIncludeOrExclude;
@@ -258,6 +261,8 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
         }
+
+        clientThread.invoke(client::refreshChat);
     }
 
     @Subscribe
