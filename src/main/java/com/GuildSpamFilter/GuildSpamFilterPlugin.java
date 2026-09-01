@@ -92,6 +92,8 @@ public class GuildSpamFilterPlugin extends Plugin
         UpdatePbsToIncludeOrExclude();
         UpdateCustomFilters();
         UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
+
+        clientThread.invoke(client::refreshChat);
     }
 
     @Override
@@ -104,6 +106,8 @@ public class GuildSpamFilterPlugin extends Plugin
         categoris = null;
         raidItemsIds = null;
         raidItemPrices = null;
+
+        clientThread.invoke(client::refreshChat);
     }
 
     private void SetupRaidItemPrices()
