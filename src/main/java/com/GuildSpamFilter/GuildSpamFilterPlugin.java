@@ -250,6 +250,11 @@ public class GuildSpamFilterPlugin extends Plugin
     @Subscribe
     public void onConfigChanged(ConfigChanged event)
     {
+        if (!GuildSpamFilterConfig.GROUP.equals(event.getGroup()))
+        {
+            return;
+        }
+
         if (event.getKey()
                  .equals("pbsToIncludeOrExclude"))
         {

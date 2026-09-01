@@ -5,9 +5,11 @@ import com.GuildSpamFilter.Configs.CombatDiariesEnum;
 import com.GuildSpamFilter.Configs.PersonalBestEnum;
 import net.runelite.client.config.*;
 
-@ConfigGroup("GuildSpamFilter")
+@ConfigGroup(GuildSpamFilterConfig.GROUP)
 public interface GuildSpamFilterConfig extends Config
 {
+    String GROUP = "GuildSpamFilter";
+
     @ConfigSection(
             position = 0,
             closedByDefault = false,
