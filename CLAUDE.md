@@ -33,15 +33,15 @@ All logic lives in `GuildSpamFilterPlugin`:
   every message, including all old messages when `client.refreshChat()` runs. Int stack: `[size-3]` = show flag
   (set to `0` to hide), `[size-2]` = message type, `[size-1]` = message id. Object stack `[size-1]` = message text.
 - **Pipeline:** `shouldFilterMessage` strips a leading `<img=N>` and anything up to the first `|`, checks the
-  always-show list first, then ORs the `filterX` methods; the first match hides the message. The Leagues filter
-  looks at the raw message for `<img=22>`.
+  always-included players first, then ORs the `filterX` methods; the first match hides the message. The Leagues
+  filter looks at the raw message for `<img=22>`.
 - **Parsing:** `indexOf`/`substring`, not regex. Numbers are read with `readNumber`, which ignores commas, "coins"
   and punctuation and returns -1 instead of throwing. The rule is: if a filter is on and the broadcast can't be
   parsed, hide it. As a safety net, `onScriptCallbackEvent` catches any exception from the filters, shows that
   broadcast and logs one warning quoting it.
 - **Threads:** filtering runs on the client thread. `onConfigChanged` is called on the Swing thread, so it does its
   list updates inside `clientThread.invoke`, together with the chat refresh.
-- **Always-show players** (`isBroadcastMessageForPlayer`): the game writes spaces in names as non-breaking spaces,
+- **Always-included players** (`isBroadcastMessageForPlayer`): the game writes spaces in names as non-breaking spaces,
   so spaces in the configured name act as wildcards, and the name must end at a space character ("Bob" must not
   match "Bobby").
 - **Settings:** config group `GuildSpamFilterConfig.GROUP` (`"GuildSpamFilter"`). The comma-separated lists
@@ -70,9 +70,9 @@ All logic lives in `GuildSpamFilterPlugin`:
   `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. In the real client it logs
   `Loaded 1721 collection log items in 5 tabs, including 67 raid items` (September 2026).
   `CollectionLogTab.lowercaseItemNames` is lowercase, and `filterCollectionLogByTab` compares lowercase item names
-  and switches on the tab name constants in
-  `CollectionLogTab` (`BOSSES`, `RAIDS`, `CLUES`, `MINIGAMES`, `OTHER`), which must match the game's tab names
-  exactly. Always use the constants; test fakes deliberately spell the names out.
+  and switches on the tab name constants in `CollectionLogTab` (`BOSSES`, `RAIDS`, `CLUES`, `MINIGAMES`, `OTHER`),
+  which must match the game's tab names exactly. Always use the constants; test fakes deliberately spell the names
+  out.
 
 ## Tests
 
@@ -113,17 +113,29 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
 - `runelite-plugin.properties` has `build=standard`: the Hub replaces `build.gradle` and `settings.gradle` with its
   own template (RuneLite client, Lombok 1.18.30, JetBrains annotations, `--release 11`) and only packages the `main`
   source set. Tests and test dependencies are never built there, and runtime dependencies beyond RuneLite's can't
-  be added without a Hub dependency-verification PR.
+  be added without a Hub dependency-verification PR. The Hub also rejects classes newer than Java 11, classes in the
+  `net.runelite` package, and the APIs in `disallowed-apis.txt` in the `runelite/plugin-hub-tooling` repo.
 - The Hub rebuilds every plugin for each RuneLite release. If this plugin fails to compile, it silently stops being
   served for that client version. To diagnose, check `~/.runelite/logs/client.log` for a missing
-  `Loading external plugin "guild-spam-filter"` line, then build against `latest.release`.
+  `Loading external plugin "guild-spam-filter"` line, or look for `guild-spam-filter` in the Hub's public list,
+  `https://repo.runelite.net/plugins/manifest/<RuneLite version>_full.js` (a 4-byte signature length and the
+  signature, then JSON). Then build against `latest.release`.
 - The version players see comes from `version=` in `runelite-plugin.properties`. With `build=standard` the Hub
   ignores `build.gradle`'s version, and without the property it shows the first 8 characters of the commit hash.
 - **Release steps:**
   1. Bump `version` in both `runelite-plugin.properties` and `build.gradle`.
   2. Merge into `master` through a pull request (`master` has a branch protection rule requiring PRs).
-  3. Open a PR to `runelite/plugin-hub` updating `commit=` in `plugins/guild-spam-filter` to the full 40-character
-     hash on `master`. Squash or rebase merges change the hash.
+  3. Update the Plugin Hub through the fork `andreasx23/plugin-hub`. Keep the fork's `master` identical to
+     `runelite/plugin-hub`'s: RuneLite squash-merges Hub PRs, so commits made on the fork's `master` never reach
+     upstream and pile up in every later PR (it once reached 74 commits for a one-line change). For each release:
+     - Sync the fork's `master` (GitHub's **Sync fork**), then create a branch from it, e.g.
+       `guild-spam-filter-1.9.4`.
+     - In that branch, change only `commit=` in `plugins/guild-spam-filter` to the full 40-character hash on this
+       repo's `master`. Copy it after merging, since squash and rebase merges change the hash.
+     - Push the branch and open the PR from it into `runelite/plugin-hub:master`. It should show 1 commit and
+       1 changed file.
+     - The Hub's CI builds the plugin against the current RuneLite release. Check that it passes, then delete the
+       branch once RuneLite merges the PR.
 
 ## Conventions
 
@@ -134,8 +146,8 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
   `debug`: each broadcast is logged once as `Checking broadcast: …`, and a filter that hides it logs one
   `Hiding … (<setting name as shown in the panel>: <value>)` line with the reason. A broadcast with no `Hiding` line
   was shown, so don't add "detected" lines.
-- Spell names out instead of abbreviating (`personalBest`, not `pb`; `ChambersOfXeric`, not `Cox`). The exceptions
-  are the game terms the settings panel itself uses: XP, GP, PvM and PvP.
+- Spell names out instead of abbreviating (`personalBestMode`, not `pbMode`; `alwaysIncludedPlayerNames`, not
+  `alwaysIncludedPlayerIgns`). The exceptions are the game terms the settings panel itself uses: XP, GP, PvM and PvP.
 - `.idea/` is tracked. IntelliJ rewrites `.idea/compiler.xml` and `.idea/misc.xml` (Lombok processor path, Java
   language level) when it reloads the Gradle project; commit those alongside the change that caused them.
 - Git runs with `core.autocrlf`, so "LF will be replaced by CRLF" warnings are expected.

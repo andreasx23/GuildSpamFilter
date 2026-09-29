@@ -10,6 +10,8 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
   For example, set *Loot GP Threshold* to 1,000,000 to hide drops worth less than 1M.
   Bigger drops still show.
 - **Changes apply straight away**, including to messages already in your chat.
+- **Always up to date with the game.** Collection log and raid items are read from the game itself,
+  so new items are covered without waiting for a plugin update.
 - **It only changes what you see.** Your clanmates still see everything.
 
 ## What you can hide
@@ -22,7 +24,7 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
 - **Skilling:** level-ups, XP milestones, total level milestones and max total
 - **PvM:** raid loot, regular drops and rare drops
 - **PvP:** player kills and deaths
-- **Other:** Leagues broadcasts
+- **Miscellaneous:** Leagues broadcasts
 
 ## Extras
 
