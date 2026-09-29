@@ -1,5 +1,6 @@
 package com.GuildSpamFilter.Handlers;
 
+import com.GuildSpamFilter.Models.CollectionLogItem;
 import com.GuildSpamFilter.Models.CollectionLogPage;
 import com.GuildSpamFilter.Models.CollectionLogTab;
 import net.runelite.api.Client;
@@ -39,7 +40,7 @@ public class CollectionLogHandler
                 for (int itemId : client.getEnum(pageStruct.getIntValue(PAGE_ITEMS_ENUM_PARAM_ID)).getIntVals())
                 {
                     String itemName = client.getItemDefinition(itemId).getName();
-                    page.itemNames.add(itemName);
+                    page.items.add(new CollectionLogItem(itemId, itemName));
                     tab.lowercaseItemNames.add(itemName.toLowerCase());
                 }
 

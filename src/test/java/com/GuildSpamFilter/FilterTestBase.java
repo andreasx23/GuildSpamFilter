@@ -30,6 +30,7 @@ public abstract class FilterTestBase
     protected ClientThread clientThread;
     protected ItemManager itemManager;
     protected GuildSpamFilterConfig config;
+    protected FakeCollectionLog collectionLog;
     protected GuildSpamFilterPlugin plugin;
 
     @Before
@@ -46,16 +47,18 @@ public abstract class FilterTestBase
         doAnswer(invocation -> ((BooleanSupplier) invocation.getArgument(0)).getAsBoolean())
                 .when(clientThread).invoke(any(BooleanSupplier.class));
 
-        new FakeCollectionLog()
+        collectionLog = new FakeCollectionLog()
                 .tab("Bosses").page("Abyssal Sire", "Abyssal orphan", "Abyssal whip")
-                .tab("Raids").page("Chambers of Xeric", "Olmlet", "Twisted bow")
+                .tab("Raids")
+                .page("Chambers of Xeric", "Olmlet", "Twisted bow", "Dexterous prayer scroll", "Metamorphic dust")
+                .page("Theatre of Blood", "Scythe of vitur (uncharged)")
                 .tab("Clues")
                 .page("Beginner Treasure Trails", "Mole slippers")
                 .page("Easy Treasure Trails", "Blue skirt (g)")
                 .page("Hard Treasure Trails", "3rd age amulet")
                 .tab("Minigames").page("Barbarian Assault", "Fighter hat")
-                .tab("Other").page("Aerial Fishing", "Golden tench")
-                .installOn(client);
+                .tab("Other").page("Aerial Fishing", "Golden tench");
+        collectionLog.installOn(client);
 
         plugin = new GuildSpamFilterPlugin();
         Guice.createInjector(binder ->

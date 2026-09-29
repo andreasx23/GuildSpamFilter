@@ -5,6 +5,7 @@ import net.runelite.api.EnumComposition;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.StructComposition;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.when;
 class FakeCollectionLog
 {
     private final Map<String, Map<String, String[]>> tabs = new LinkedHashMap<>();
+    private final Map<String, Integer> itemIds = new HashMap<>();
     private Map<String, String[]> currentTab;
     private int nextId = 1_000_000;
 
@@ -45,16 +47,18 @@ class FakeCollectionLog
             int pageIndex = 0;
             for (Map.Entry<String, String[]> page : tab.getValue().entrySet())
             {
-                int[] itemIds = new int[page.getValue().length];
-                for (int i = 0; i < itemIds.length; i++)
+                int[] pageItemIds = new int[page.getValue().length];
+                for (int i = 0; i < pageItemIds.length; i++)
                 {
-                    itemIds[i] = nextId++;
+                    String itemName = page.getValue()[i];
+                    pageItemIds[i] = nextId++;
+                    itemIds.putIfAbsent(itemName, pageItemIds[i]);
                     ItemComposition item = mock(ItemComposition.class);
-                    when(item.getName()).thenReturn(page.getValue()[i]);
-                    when(client.getItemDefinition(itemIds[i])).thenReturn(item);
+                    when(item.getName()).thenReturn(itemName);
+                    when(client.getItemDefinition(pageItemIds[i])).thenReturn(item);
                 }
 
-                int itemsEnumId = addEnum(client, nextId++, itemIds);
+                int itemsEnumId = addEnum(client, nextId++, pageItemIds);
                 pageStructIds[pageIndex++] = addStruct(client, 689, page.getKey(), 690, itemsEnumId);
             }
 
@@ -63,6 +67,18 @@ class FakeCollectionLog
         }
 
         addEnum(client, 2102, tabStructIds);
+    }
+
+    /** The item id given to an item name, available after {@link #installOn}. */
+    int itemId(String itemName)
+    {
+        Integer itemId = itemIds.get(itemName);
+        if (itemId == null)
+        {
+            throw new IllegalArgumentException("No item named " + itemName + " in the fake collection log");
+        }
+
+        return itemId;
     }
 
     private static int addEnum(Client client, int enumId, int[] values)

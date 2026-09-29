@@ -3,6 +3,8 @@ package com.GuildSpamFilter;
 import com.GuildSpamFilter.Configs.AchievementDiaryTier;
 import com.GuildSpamFilter.Configs.CombatAchievementTier;
 import com.GuildSpamFilter.Handlers.CollectionLogHandler;
+import com.GuildSpamFilter.Models.CollectionLogItem;
+import com.GuildSpamFilter.Models.CollectionLogPage;
 import com.GuildSpamFilter.Models.CollectionLogTab;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +25,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 /*
    Shout out to Spam Filter for giving me a baseline on how to implement this simple Clan (broadcast) Spam Filter
@@ -66,8 +67,8 @@ public class GuildSpamFilterPlugin extends Plugin
     private HashSet<String> customFilters;
     private HashSet<String> alwaysIncludedPlayerNames;
     private ArrayList<CollectionLogTab> collectionLogTabs;
+    // Lowercase item name to item id, for every item on the collection log's Raids tab
     private HashMap<String, Integer> raidItemIds;
-    private HashMap<String, Long> raidItemPrices;
 
     @Inject
     private ItemManager itemManager;
@@ -85,10 +86,8 @@ public class GuildSpamFilterPlugin extends Plugin
         personalBestsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
         alwaysIncludedPlayerNames = new HashSet<String>();
-        raidItemIds = new HashMap<String, Integer>();
-        raidItemPrices = new HashMap<String, Long>();
-
         collectionLogTabs = new ArrayList<CollectionLogTab>();
+        raidItemIds = new HashMap<String, Integer>();
 
         clientThread.invoke(this::loadCollectionLog);
         updatePersonalBestsToIncludeOrExclude();
@@ -107,7 +106,6 @@ public class GuildSpamFilterPlugin extends Plugin
         alwaysIncludedPlayerNames = null;
         collectionLogTabs = null;
         raidItemIds = null;
-        raidItemPrices = null;
 
         clientThread.invoke(client::refreshChat);
     }
@@ -125,67 +123,26 @@ public class GuildSpamFilterPlugin extends Plugin
         collectionLogTabs = collectionLogHandler.readData(client);
 
         int itemCount = 0;
+        raidItemIds = new HashMap<String, Integer>();
         for (CollectionLogTab tab : collectionLogTabs)
         {
             itemCount += tab.lowercaseItemNames.size();
+
+            if (tab.name.equals("Raids"))
+            {
+                for (CollectionLogPage page : tab.pages)
+                {
+                    for (CollectionLogItem item : page.items)
+                    {
+                        raidItemIds.putIfAbsent(item.name.toLowerCase(), item.id);
+                    }
+                }
+            }
         }
 
-        log.info("Loaded " + itemCount + " collection log items in " + collectionLogTabs.size() + " tabs");
+        log.info("Loaded " + itemCount + " collection log items in " + collectionLogTabs.size() + " tabs, including " +
+                raidItemIds.size() + " raid items");
         return true;
-    }
-
-    private void setUpRaidItemPrices()
-    {
-        addChambersOfXericItems();
-        addTheatreOfBloodItems();
-        addTombsOfAmascutItems();
-
-        raidItemPrices.clear();
-        for (Map.Entry<String, Integer> raidItem : raidItemIds.entrySet())
-        {
-            String itemName = raidItem.getKey();
-            int itemId = raidItem.getValue();
-            long itemPrice = itemManager.getItemPrice(itemId);
-            raidItemPrices.put(itemName.toLowerCase(), itemPrice);
-        }
-    }
-
-    private void addChambersOfXericItems()
-    {
-        raidItemIds.put("Twisted Bow", 20997);
-        raidItemIds.put("Kodai insignia", 21043);
-        raidItemIds.put("Elder maul", 21003);
-        raidItemIds.put("Ancestral hat", 21018);
-        raidItemIds.put("Ancestral robe bottom", 21024);
-        raidItemIds.put("Ancestral robe top", 21021);
-        raidItemIds.put("Dragon claws", 13652);
-        raidItemIds.put("Twisted buckler", 21000);
-        raidItemIds.put("Dragon hunter crossbow", 21012);
-        raidItemIds.put("Dexterous prayer scroll", 21034);
-        raidItemIds.put("Arcane prayer scroll", 21079);
-        raidItemIds.put("Dinh's bulwark", 21015);
-    }
-
-    private void addTheatreOfBloodItems()
-    {
-        raidItemIds.put("Scythe of vitur (uncharged)", 22486);
-        raidItemIds.put("Sanguinesti staff (uncharged)", 22481);
-        raidItemIds.put("Ghrazi rapier", 22324);
-        raidItemIds.put("Avernic defender hilt", 22477);
-        raidItemIds.put("Justiciar chestguard", 22327);
-        raidItemIds.put("Justiciar faceguard", 22326);
-        raidItemIds.put("Justiciar legguards", 22328);
-    }
-
-    private void addTombsOfAmascutItems()
-    {
-        raidItemIds.put("Osmumten's fang", 26219);
-        raidItemIds.put("Lightbearer", 25975);
-        raidItemIds.put("Masori body", 27229);
-        raidItemIds.put("Masori chaps", 27232);
-        raidItemIds.put("Masori mask", 27226);
-        raidItemIds.put("Elidinis' ward", 25985);
-        raidItemIds.put("Tumeken's shadow (uncharged)", 27277);
     }
 
     private void updatePersonalBestsToIncludeOrExclude()
@@ -312,11 +269,6 @@ public class GuildSpamFilterPlugin extends Plugin
                   .equals("chatFilterCheck"))
         {
             return;
-        }
-
-        if (raidItemPrices.isEmpty())
-        {
-            setUpRaidItemPrices();
         }
 
         int[] intStack = client.getIntStack();
@@ -492,11 +444,13 @@ public class GuildSpamFilterPlugin extends Plugin
             String itemStartPart = message.substring(startIndex);
             int endIndex = itemStartPart.lastIndexOf("(");
             String itemPart = itemStartPart.substring(1, endIndex);
-            String item = itemPart.trim().toLowerCase();
+            String itemName = itemPart.trim().toLowerCase();
 
-            if (raidItemPrices.containsKey(item))
+            Integer itemId = raidItemIds.get(itemName);
+            if (itemId != null)
             {
-                long gpValue = raidItemPrices.get(item);
+                // Looked up now rather than cached, so the price is always current
+                long gpValue = itemManager.getItemPrice(itemId);
                 if (gpValue < config.raidLootGpThreshold() ||
                         gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
                 {

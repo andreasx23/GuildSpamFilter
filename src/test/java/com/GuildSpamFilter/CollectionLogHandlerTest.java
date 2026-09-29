@@ -1,6 +1,7 @@
 package com.GuildSpamFilter;
 
 import com.GuildSpamFilter.Handlers.CollectionLogHandler;
+import com.GuildSpamFilter.Models.CollectionLogItem;
 import com.GuildSpamFilter.Models.CollectionLogPage;
 import com.GuildSpamFilter.Models.CollectionLogTab;
 import net.runelite.api.Client;
@@ -18,13 +19,14 @@ import static org.mockito.Mockito.mock;
 
 public class CollectionLogHandlerTest
 {
+    private FakeCollectionLog collectionLog;
     private ArrayList<CollectionLogTab> tabs;
 
     @Before
     public void readCollectionLog()
     {
         Client client = mock(Client.class);
-        new FakeCollectionLog()
+        collectionLog = new FakeCollectionLog()
                 .tab("Bosses")
                 .page("Abyssal Sire", "Abyssal orphan", "Abyssal whip")
                 .page("Kraken", "Pet kraken", "Trident of the seas (full)")
@@ -33,8 +35,8 @@ public class CollectionLogHandlerTest
                 .tab("Minigames").page("Barbarian Assault", "Fighter hat")
                 .tab("Other")
                 .page("Aerial Fishing", "Golden tench")
-                .page("All Pets", "Pet kraken", "Olmlet")
-                .installOn(client);
+                .page("All Pets", "Pet kraken", "Olmlet");
+        collectionLog.installOn(client);
 
         tabs = new CollectionLogHandler().readData(client);
     }
@@ -52,15 +54,24 @@ public class CollectionLogHandlerTest
     }
 
     @Test
-    public void readsEachPageWithItsItemNames()
+    public void readsEachPageWithItsItems()
     {
         List<CollectionLogPage> bossPages = tab("Bosses").pages;
 
         assertEquals(2, bossPages.size());
         assertEquals("Abyssal Sire", bossPages.get(0).name);
-        assertEquals(Arrays.asList("Abyssal orphan", "Abyssal whip"), bossPages.get(0).itemNames);
+        assertEquals(Arrays.asList("Abyssal orphan", "Abyssal whip"), itemNames(bossPages.get(0)));
         assertEquals("Kraken", bossPages.get(1).name);
-        assertEquals(Arrays.asList("Pet kraken", "Trident of the seas (full)"), bossPages.get(1).itemNames);
+        assertEquals(Arrays.asList("Pet kraken", "Trident of the seas (full)"), itemNames(bossPages.get(1)));
+    }
+
+    @Test
+    public void keepsEachItemsIdFromTheGame()
+    {
+        CollectionLogItem whip = tab("Bosses").pages.get(0).items.get(1);
+
+        assertEquals("Abyssal whip", whip.name);
+        assertEquals(collectionLog.itemId("Abyssal whip"), whip.id);
     }
 
     @Test
@@ -81,6 +92,17 @@ public class CollectionLogHandlerTest
         assertTrue(tab("Other").lowercaseItemNames.contains("pet kraken"));
         assertTrue(tab("Raids").lowercaseItemNames.contains("olmlet"));
         assertTrue(tab("Other").lowercaseItemNames.contains("olmlet"));
+    }
+
+    private static List<String> itemNames(CollectionLogPage page)
+    {
+        List<String> names = new ArrayList<>();
+        for (CollectionLogItem item : page.items)
+        {
+            names.add(item.name);
+        }
+
+        return names;
     }
 
     private CollectionLogTab tab(String name)

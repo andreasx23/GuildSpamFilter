@@ -51,16 +51,18 @@ All logic lives in `GuildSpamFilterPlugin`:
   tier). Easy is deliberately not offered as a threshold; broadcast tiers are resolved by `getAchievementDiaryTierId`
   / `getCombatAchievementTierId`, which treat Easy as id 0 and unknown words as -1. Don't use `Enum.valueOf` on
   broadcast text.
-- **Raid loot:** the value comes from `ItemManager.getItemPrice` (GE price) for the hardcoded item ids in
-  `addChambersOfXericItems` / `addTheatreOfBloodItems` / `addTombsOfAmascutItems`, looked up on the first
-  `chatFilterCheck`, not from the coin value in the broadcast. Since RuneLite 1.13.0, `getItemPrice` returns `long`.
+- **Raid loot:** `raidItemIds` maps every item on the collection log's Raids tab to its item id (built in
+  `loadCollectionLog`). The value comes from `ItemManager.getItemPrice` (GE price), looked up when the broadcast
+  arrives, not from the coin value in the broadcast. Don't cache prices at load time: that runs at the login screen,
+  possibly before RuneLite has fetched prices. Items not on the Raids tab are never filtered. Since RuneLite 1.13.0,
+  `getItemPrice` returns `long`.
 - **Collection log:** `CollectionLogHandler.readData(client)` reads the game cache, the same data the in-game
   collection log uses: enum `2102` → tab structs (param `682` name, `683` enum of pages) → page structs (param `689`
   name, `690` enum of item ids) → `client.getItemDefinition(id).getName()`. RuneLite has no named constants for these
   ids; they match the `collection-log` (evansloan) and `kill-clog` Hub plugins. Cache reads need the client thread
   and a loaded game, so `startUp` schedules `loadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
   `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. It logs
-  `Loaded N collection log items in 5 tabs` (N ≈ 1,700). `CollectionLogTab.lowercaseItemNames` is lowercase, and
+  `Loaded N collection log items in 5 tabs, including M raid items` (N ≈ 1,700, M ≈ 67). `CollectionLogTab.lowercaseItemNames` is lowercase, and
   `filterCollectionLogByTab` compares lowercase item names and switches on the tab names `Bosses`, `Raids`,
   `Clues`, `Minigames`, `Other`.
 

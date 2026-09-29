@@ -7,10 +7,6 @@ import static org.mockito.Mockito.when;
 
 public class PvmFiltersTest extends FilterTestBase
 {
-    private static final int TWISTED_BOW = 20997;
-    private static final int DEXTEROUS_PRAYER_SCROLL = 21034;
-    private static final int SCYTHE_OF_VITUR = 22486;
-
     private static final String TWISTED_BOW_RAID_DROP = "Biceps Btw received special loot from a raid: Twisted bow (1,500,000,000 coins).";
     private static final String SCROLL_RAID_DROP = "Biceps Btw received special loot from a raid: Dexterous prayer scroll (20,000,000 coins).";
 
@@ -21,9 +17,15 @@ public class PvmFiltersTest extends FilterTestBase
     public void setGrandExchangePrices()
     {
         // The raid loot filter looks up the item's price instead of reading it from the broadcast
-        when(itemManager.getItemPrice(TWISTED_BOW)).thenReturn(1_500_000_000L);
-        when(itemManager.getItemPrice(DEXTEROUS_PRAYER_SCROLL)).thenReturn(20_000_000L);
-        when(itemManager.getItemPrice(SCYTHE_OF_VITUR)).thenReturn(1_000_000_000L);
+        setPrice("Twisted bow", 1_500_000_000L);
+        setPrice("Dexterous prayer scroll", 20_000_000L);
+        setPrice("Scythe of vitur (uncharged)", 1_000_000_000L);
+        setPrice("Metamorphic dust", 5_000_000L);
+    }
+
+    private void setPrice(String itemName, long price)
+    {
+        when(itemManager.getItemPrice(collectionLog.itemId(itemName))).thenReturn(price);
     }
 
     // Raid loot
@@ -54,6 +56,36 @@ public class PvmFiltersTest extends FilterTestBase
         when(config.raidLootGpThreshold()).thenReturn(1_200_000_000);
 
         assertHidden("Biceps Btw received special loot from a raid: Scythe of vitur (uncharged) (1,000,000,000 coins).");
+    }
+
+    @Test
+    public void coversEveryItemOnTheCollectionLogRaidsTab()
+    {
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(1_000_000_000);
+
+        assertHidden("Biceps Btw received special loot from a raid: Metamorphic dust (5,000,000 coins).");
+    }
+
+    @Test
+    public void leavesItemsFromOtherCollectionLogTabsAlone()
+    {
+        when(config.filterRaidDrop()).thenReturn(true);
+
+        assertShown("Biceps Btw received special loot from a raid: Abyssal whip (1,500,000 coins).");
+    }
+
+    @Test
+    public void usesTheCurrentPriceWhenTheBroadcastArrives()
+    {
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(1_000_000_000);
+
+        setPrice("Twisted bow", 900_000_000L);
+        assertHidden(TWISTED_BOW_RAID_DROP);
+
+        setPrice("Twisted bow", 1_100_000_000L);
+        assertShown(TWISTED_BOW_RAID_DROP);
     }
 
     // Regular and rare drops
