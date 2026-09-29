@@ -117,8 +117,10 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
 - The Hub rebuilds every plugin for each RuneLite release. If this plugin fails to compile, it silently stops being
   served for that client version. To diagnose, check `~/.runelite/logs/client.log` for a missing
   `Loading external plugin "guild-spam-filter"` line, then build against `latest.release`.
+- The version players see comes from `version=` in `runelite-plugin.properties`. With `build=standard` the Hub
+  ignores `build.gradle`'s version, and without the property it shows the first 8 characters of the commit hash.
 - **Release steps:**
-  1. Bump `version` in `build.gradle`.
+  1. Bump `version` in both `runelite-plugin.properties` and `build.gradle`.
   2. Merge into `master` through a pull request (`master` has a branch protection rule requiring PRs).
   3. Open a PR to `runelite/plugin-hub` updating `commit=` in `plugins/guild-spam-filter` to the full 40-character
      hash on `master`. Squash or rebase merges change the hash.
