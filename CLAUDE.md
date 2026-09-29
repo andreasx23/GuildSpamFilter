@@ -40,25 +40,28 @@ All logic lives in `GuildSpamFilterPlugin`:
   so spaces in the configured name act as wildcards, and the name must end at a space character ("Bob" must not
   match "Bobby").
 - **Settings:** config group `GuildSpamFilterConfig.GROUP` (`"GuildSpamFilter"`). The comma-separated lists
-  (`pbsToIncludeOrExclude`, `customFilters`, `excludedPlayerNames`) are cached in `HashSet`s and only reloaded by
-  key in `onConfigChanged`. `onConfigChanged` ignores other plugins' groups, and it, `startUp` and `shutDown` call
-  `clientThread.invoke(client::refreshChat)` so existing chat is refiltered. `excludedPlayerNames` is the
-  *always-show* list despite its name; config key names can't be changed without losing users' saved settings.
-- **Tier thresholds:** `AchievementDiariesEnum` / `CombatDiariesEnum` are the dropdown options (`ALL` hides every
-  tier). `EASY` is deliberately left out so it isn't offered as a threshold; broadcast tiers are resolved by
-  `getAchievementDiaryTierId` / `getCombatDiaryTierId`, which treat Easy as id 0 and unknown words as -1. Don't use
-  `Enum.valueOf` on broadcast text.
+  (personal bests, custom filters, always-included players) are cached in `HashSet`s and only reloaded in
+  `onConfigChanged`, which matches on the settings' `keyName`s. `onConfigChanged` ignores other plugins' groups,
+  and it, `startUp` and `shutDown` call `clientThread.invoke(client::refreshChat)` so existing chat is refiltered.
+- **Saved names never change:** users' settings are saved under the config group, each `@ConfigItem`'s `keyName`,
+  and enum constant names (`ALL`, `ELITE`, `EXCLUDE_ALL_EXCEPT`). Renaming any of them silently resets that setting
+  for every user. Java method and class names can be renamed freely, which is why some `keyName`s no longer match
+  their methods (e.g. `alwaysIncludedPlayerNames()` is saved as `excludedPlayerNames`).
+- **Tier thresholds:** `AchievementDiaryTier` / `CombatAchievementTier` are the dropdown options (`ALL` hides every
+  tier). Easy is deliberately not offered as a threshold; broadcast tiers are resolved by `getAchievementDiaryTierId`
+  / `getCombatAchievementTierId`, which treat Easy as id 0 and unknown words as -1. Don't use `Enum.valueOf` on
+  broadcast text.
 - **Raid loot:** the value comes from `ItemManager.getItemPrice` (GE price) for the hardcoded item ids in
-  `AddCoxRaidItems` / `AddTobRaidItems` / `AddToaRaidItems`, looked up on the first `chatFilterCheck`, not from the
-  coin value in the broadcast. Since RuneLite 1.13.0, `getItemPrice` returns `long`.
-- **Collection log:** `CollectionLogHandler.ReadData(client)` reads the game cache, the same data the in-game
+  `addChambersOfXericItems` / `addTheatreOfBloodItems` / `addTombsOfAmascutItems`, looked up on the first
+  `chatFilterCheck`, not from the coin value in the broadcast. Since RuneLite 1.13.0, `getItemPrice` returns `long`.
+- **Collection log:** `CollectionLogHandler.readData(client)` reads the game cache, the same data the in-game
   collection log uses: enum `2102` → tab structs (param `682` name, `683` enum of pages) → page structs (param `689`
   name, `690` enum of item ids) → `client.getItemDefinition(id).getName()`. RuneLite has no named constants for these
   ids; they match the `collection-log` (evansloan) and `kill-clog` Hub plugins. Cache reads need the client thread
-  and a loaded game, so `startUp` schedules `LoadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
+  and a loaded game, so `startUp` schedules `loadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
   `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. It logs
-  `Loaded N collection log items in 5 categories` (N ≈ 1,700). `Categori.allItems` is lowercase, and
-  `filterCollectionLogByCategory` compares lowercase item names and switches on the tab names `Bosses`, `Raids`,
+  `Loaded N collection log items in 5 tabs` (N ≈ 1,700). `CollectionLogTab.lowercaseItemNames` is lowercase, and
+  `filterCollectionLogByTab` compares lowercase item names and switches on the tab names `Bosses`, `Raids`,
   `Clues`, `Minigames`, `Other`.
 
 ## Tests
@@ -71,7 +74,7 @@ plus `MessageHandlingTest` and `CollectionLogHandlerTest`.
   `CALLS_REAL_METHODS`, so every setting has its real default until stubbed. `clientThread.invoke(BooleanSupplier)`
   runs immediately, and `FakeCollectionLog` installs a small collection log using the real cache ids.
 - `isHidden(message)` simulates the `chatFilterCheck` stacks. For the list settings use `setCustomFilters`,
-  `setAlwaysShownPlayers` or `setPersonalBestList`: they fire `ConfigChanged`, because stubbing the getter alone
+  `setAlwaysIncludedPlayers` or `setPersonalBestList`: they fire `ConfigChanged`, because stubbing the getter alone
   doesn't update the cached sets.
 - Exceptions propagate in tests. In the real client the EventBus logs them and the message stays shown, so a crash
   in a filter looks like "not filtered" to players.
@@ -109,8 +112,10 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
 
 ## Conventions
 
-- Allman braces, 4-space indentation, PascalCase private helpers (`UpdateCustomFilters`, `LoadCollectionLog`),
-  `log.debug` with string concatenation. `Categori` is the existing model name.
+- Allman braces, 4-space indentation, standard Java naming (camelCase methods and fields, no `_` prefixes, no
+  `Enum` suffix on types), and `log.debug` with string concatenation.
+- Spell names out instead of abbreviating (`personalBest`, not `pb`; `ChambersOfXeric`, not `Cox`). The exceptions
+  are the game terms the settings panel itself uses: XP, GP, PvM and PvP.
 - `.idea/` is tracked. IntelliJ rewrites `.idea/compiler.xml` (the Lombok processor path) after Gradle dependency
   changes; commit that alongside the change that caused it.
 - Git runs with `core.autocrlf`, so "LF will be replaced by CRLF" warnings are expected.

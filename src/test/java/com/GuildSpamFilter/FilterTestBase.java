@@ -103,7 +103,7 @@ public abstract class FilterTestBase
 
     protected void setPersonalBestList(String value)
     {
-        when(config.pbsToIncludeOrExclude()).thenReturn(value);
+        when(config.personalBestsToIncludeOrExclude()).thenReturn(value);
         changeSetting("pbsToIncludeOrExclude");
     }
 
@@ -113,9 +113,9 @@ public abstract class FilterTestBase
         changeSetting("customFilters");
     }
 
-    protected void setAlwaysShownPlayers(String value)
+    protected void setAlwaysIncludedPlayers(String value)
     {
-        when(config.excludedPlayerNames()).thenReturn(value);
+        when(config.alwaysIncludedPlayerNames()).thenReturn(value);
         changeSetting("excludedPlayerNames");
     }
 

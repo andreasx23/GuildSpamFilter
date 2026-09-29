@@ -1,67 +1,67 @@
 package com.GuildSpamFilter;
 
-import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
-import com.GuildSpamFilter.Configs.CombatDiariesEnum;
-import com.GuildSpamFilter.Configs.PersonalBestEnum;
+import com.GuildSpamFilter.Configs.AchievementDiaryTier;
+import com.GuildSpamFilter.Configs.CombatAchievementTier;
+import com.GuildSpamFilter.Configs.PersonalBestMode;
 import org.junit.Test;
 
 import static org.mockito.Mockito.when;
 
 public class GeneralFiltersTest extends FilterTestBase
 {
-    private static final String VORKATH_PB = "Biceps Btw has achieved a new Vorkath personal best: 1:05.40";
-    private static final String ZULRAH_PB = "Biceps Btw has achieved a new Zulrah personal best: 0:58.20";
-    private static final String COX_PB = "Biceps Btw has achieved a new Chambers of Xeric (Team Size: 3 players) personal best: 18:03";
+    private static final String VORKATH_PERSONAL_BEST = "Biceps Btw has achieved a new Vorkath personal best: 1:05.40";
+    private static final String ZULRAH_PERSONAL_BEST = "Biceps Btw has achieved a new Zulrah personal best: 0:58.20";
+    private static final String CHAMBERS_OF_XERIC_PERSONAL_BEST = "Biceps Btw has achieved a new Chambers of Xeric (Team Size: 3 players) personal best: 18:03";
 
     private static final String MEDIUM_DIARY = "Biceps Btw has completed the Medium Ardougne diary.";
     private static final String HARD_DIARY = "Biceps Btw has completed the Hard Ardougne diary.";
     private static final String ELITE_DIARY = "Biceps Btw has completed the Elite Ardougne diary.";
 
-    private static final String ELITE_CA_TIER = "Biceps Btw has unlocked the Elite tier of rewards from Combat Achievements!";
-    private static final String MASTER_CA_TIER = "Biceps Btw has unlocked the Master tier of rewards from Combat Achievements!";
-    private static final String GRANDMASTER_CA_TIER = "Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!";
+    private static final String ELITE_COMBAT_ACHIEVEMENT_TIER = "Biceps Btw has unlocked the Elite tier of rewards from Combat Achievements!";
+    private static final String MASTER_COMBAT_ACHIEVEMENT_TIER = "Biceps Btw has unlocked the Master tier of rewards from Combat Achievements!";
+    private static final String GRANDMASTER_COMBAT_ACHIEVEMENT_TIER = "Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!";
 
     // Personal bests
 
     @Test
     public void hidesEveryPersonalBestWhenTheListIsEmpty()
     {
-        when(config.filterPb()).thenReturn(true);
+        when(config.filterPersonalBests()).thenReturn(true);
 
-        assertHidden(VORKATH_PB);
-        assertHidden(ZULRAH_PB);
+        assertHidden(VORKATH_PERSONAL_BEST);
+        assertHidden(ZULRAH_PERSONAL_BEST);
     }
 
     @Test
     public void excludeAllExceptModeKeepsOnlyListedPersonalBests()
     {
-        when(config.filterPb()).thenReturn(true);
+        when(config.filterPersonalBests()).thenReturn(true);
         setPersonalBestList("vorkath");
 
-        assertShown(VORKATH_PB);
-        assertHidden(ZULRAH_PB);
+        assertShown(VORKATH_PERSONAL_BEST);
+        assertHidden(ZULRAH_PERSONAL_BEST);
     }
 
     @Test
     public void includeAllExceptModeHidesOnlyListedPersonalBests()
     {
-        when(config.filterPb()).thenReturn(true);
-        when(config.pbToIncludeOrExcludeEnum()).thenReturn(PersonalBestEnum.INCLUDE_ALL_EXCEPT);
+        when(config.filterPersonalBests()).thenReturn(true);
+        when(config.personalBestMode()).thenReturn(PersonalBestMode.INCLUDE_ALL_EXCEPT);
         setPersonalBestList("vorkath");
 
-        assertHidden(VORKATH_PB);
-        assertShown(ZULRAH_PB);
+        assertHidden(VORKATH_PERSONAL_BEST);
+        assertShown(ZULRAH_PERSONAL_BEST);
     }
 
     @Test
     public void personalBestListAcceptsSeveralCommaSeparatedEntries()
     {
-        when(config.filterPb()).thenReturn(true);
+        when(config.filterPersonalBests()).thenReturn(true);
         setPersonalBestList("Chambers of Xeric, zulrah");
 
-        assertShown(COX_PB);
-        assertShown(ZULRAH_PB);
-        assertHidden(VORKATH_PB);
+        assertShown(CHAMBERS_OF_XERIC_PERSONAL_BEST);
+        assertShown(ZULRAH_PERSONAL_BEST);
+        assertHidden(VORKATH_PERSONAL_BEST);
     }
 
     // Pets, clan members, quests, hardcore deaths and the login message
@@ -133,7 +133,7 @@ public class GeneralFiltersTest extends FilterTestBase
     public void achievementDiaryThresholdKeepsThatTierAndHarder()
     {
         when(config.filterAchievementDiaries()).thenReturn(true);
-        when(config.achievementDiariesThreshold()).thenReturn(AchievementDiariesEnum.HARD);
+        when(config.achievementDiariesThreshold()).thenReturn(AchievementDiaryTier.HARD);
 
         assertHidden(MEDIUM_DIARY);
         assertShown(HARD_DIARY);
@@ -161,7 +161,7 @@ public class GeneralFiltersTest extends FilterTestBase
     {
         when(config.filterAchievementDiaries()).thenReturn(true);
 
-        assertShown(ELITE_CA_TIER);
+        assertShown(ELITE_COMBAT_ACHIEVEMENT_TIER);
     }
 
     // Combat Achievements
@@ -169,19 +169,19 @@ public class GeneralFiltersTest extends FilterTestBase
     @Test
     public void hidesEveryCombatAchievementTierWithTheDefaultThreshold()
     {
-        when(config.filterCombatDiaries()).thenReturn(true);
+        when(config.filterCombatAchievementTiers()).thenReturn(true);
 
         assertHidden("Biceps Btw has unlocked the Easy tier of rewards from Combat Achievements!");
-        assertHidden(ELITE_CA_TIER);
-        assertHidden(MASTER_CA_TIER);
-        assertHidden(GRANDMASTER_CA_TIER);
+        assertHidden(ELITE_COMBAT_ACHIEVEMENT_TIER);
+        assertHidden(MASTER_COMBAT_ACHIEVEMENT_TIER);
+        assertHidden(GRANDMASTER_COMBAT_ACHIEVEMENT_TIER);
     }
 
     @Test
     public void combatAchievementsHandlePlayerNamesContainingThe()
     {
-        when(config.filterCombatDiaries()).thenReturn(true);
-        when(config.combatDiariesThreshold()).thenReturn(CombatDiariesEnum.MASTER);
+        when(config.filterCombatAchievementTiers()).thenReturn(true);
+        when(config.combatAchievementThreshold()).thenReturn(CombatAchievementTier.MASTER);
 
         assertHidden("Heather has unlocked the Elite tier of rewards from Combat Achievements!");
         assertShown("Heather has unlocked the Master tier of rewards from Combat Achievements!");
@@ -190,19 +190,19 @@ public class GeneralFiltersTest extends FilterTestBase
     @Test
     public void combatAchievementThresholdKeepsThatTierAndHarder()
     {
-        when(config.filterCombatDiaries()).thenReturn(true);
-        when(config.combatDiariesThreshold()).thenReturn(CombatDiariesEnum.MASTER);
+        when(config.filterCombatAchievementTiers()).thenReturn(true);
+        when(config.combatAchievementThreshold()).thenReturn(CombatAchievementTier.MASTER);
 
-        assertHidden(ELITE_CA_TIER);
-        assertShown(MASTER_CA_TIER);
-        assertShown(GRANDMASTER_CA_TIER);
+        assertHidden(ELITE_COMBAT_ACHIEVEMENT_TIER);
+        assertShown(MASTER_COMBAT_ACHIEVEMENT_TIER);
+        assertShown(GRANDMASTER_COMBAT_ACHIEVEMENT_TIER);
     }
 
     @Test
     public void combatTaskThresholdKeepsThatTierAndHarder()
     {
-        when(config.filterCombatDiaryTasks()).thenReturn(true);
-        when(config.combatDiariesThreshold()).thenReturn(CombatDiariesEnum.ELITE);
+        when(config.filterCombatAchievementTasks()).thenReturn(true);
+        when(config.combatAchievementThreshold()).thenReturn(CombatAchievementTier.ELITE);
 
         assertHidden("Biceps Btw has completed a Hard combat task: Whack-a-Mole.");
         assertShown("Biceps Btw has completed an Elite combat task: Perfect Zulrah.");
@@ -211,7 +211,7 @@ public class GeneralFiltersTest extends FilterTestBase
     @Test
     public void hidesEasyCombatTasks()
     {
-        when(config.filterCombatDiaryTasks()).thenReturn(true);
+        when(config.filterCombatAchievementTasks()).thenReturn(true);
 
         assertHidden("Biceps Btw has completed an Easy combat task: Noxious Foe.");
     }
@@ -221,8 +221,8 @@ public class GeneralFiltersTest extends FilterTestBase
     @Test
     public void combatLevelThresholdKeepsThatLevelAndHigher()
     {
-        when(config.filterCombatLevelUpMessage()).thenReturn(true);
-        when(config.filterCombatLevelUpThreshold()).thenReturn(100);
+        when(config.filterCombatLevelUps()).thenReturn(true);
+        when(config.combatLevelUpThreshold()).thenReturn(100);
 
         assertHidden("Biceps Btw has reached combat level 99.");
         assertShown("Biceps Btw has reached combat level 100.");
@@ -232,11 +232,11 @@ public class GeneralFiltersTest extends FilterTestBase
     public void maxCombatIsHiddenOnlyWhenTheThresholdIsAbove126()
     {
         String maxCombat = "Biceps Btw has reached the highest possible combat level of 126!";
-        when(config.filterCombatLevelUpMessage()).thenReturn(true);
+        when(config.filterCombatLevelUps()).thenReturn(true);
 
         assertHidden(maxCombat);
 
-        when(config.filterCombatLevelUpThreshold()).thenReturn(126);
+        when(config.combatLevelUpThreshold()).thenReturn(126);
         assertShown(maxCombat);
     }
 }

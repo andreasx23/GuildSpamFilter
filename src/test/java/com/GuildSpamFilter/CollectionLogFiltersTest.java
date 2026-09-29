@@ -38,7 +38,7 @@ public class CollectionLogFiltersTest extends FilterTestBase
     }
 
     @Test
-    public void eachCategoryFilterHidesItemsFromThatCategory()
+    public void eachTabFilterHidesItemsFromThatTab()
     {
         when(config.filterCollectionLogBosses()).thenReturn(true);
         assertHidden(collectionLog("Abyssal whip", 812));
@@ -57,7 +57,7 @@ public class CollectionLogFiltersTest extends FilterTestBase
     }
 
     @Test
-    public void leavesItemsFromOtherCategoriesAlone()
+    public void leavesItemsFromOtherTabsAlone()
     {
         when(config.filterCollectionLogRaids()).thenReturn(true);
 
@@ -87,17 +87,17 @@ public class CollectionLogFiltersTest extends FilterTestBase
     public void slotThresholdHidesPlayersWithFewerSlots()
     {
         when(config.enableCollectionLogThreshold()).thenReturn(true);
-        when(config.filterCollectionLogThreshold()).thenReturn(1000);
+        when(config.collectionLogThreshold()).thenReturn(1000);
 
         assertHidden(collectionLog("Abyssal whip", 812));
         assertShown(collectionLog("Abyssal whip", 1200));
     }
 
     @Test
-    public void slotThresholdStillAppliesCategoryFiltersAboveIt()
+    public void slotThresholdStillAppliesTabFiltersAboveIt()
     {
         when(config.enableCollectionLogThreshold()).thenReturn(true);
-        when(config.filterCollectionLogThreshold()).thenReturn(1000);
+        when(config.collectionLogThreshold()).thenReturn(1000);
         when(config.filterCollectionLogBosses()).thenReturn(true);
 
         assertHidden(collectionLog("Abyssal whip", 1200));

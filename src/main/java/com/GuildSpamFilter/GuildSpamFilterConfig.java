@@ -1,10 +1,12 @@
 package com.GuildSpamFilter;
 
-import com.GuildSpamFilter.Configs.AchievementDiariesEnum;
-import com.GuildSpamFilter.Configs.CombatDiariesEnum;
-import com.GuildSpamFilter.Configs.PersonalBestEnum;
+import com.GuildSpamFilter.Configs.AchievementDiaryTier;
+import com.GuildSpamFilter.Configs.CombatAchievementTier;
+import com.GuildSpamFilter.Configs.PersonalBestMode;
 import net.runelite.client.config.*;
 
+// The group and every keyName are what users' settings are saved under, so they must never change,
+// even when a method is renamed. That's why some keyNames don't match their method names.
 @ConfigGroup(GuildSpamFilterConfig.GROUP)
 public interface GuildSpamFilterConfig extends Config
 {
@@ -66,7 +68,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 0
     )
-    default boolean filterPb()
+    default boolean filterPersonalBests()
     {
         return false;
     }
@@ -78,9 +80,9 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 1
     )
-    default PersonalBestEnum pbToIncludeOrExcludeEnum()
+    default PersonalBestMode personalBestMode()
     {
-        return PersonalBestEnum.EXCLUDE_ALL_EXCEPT;
+        return PersonalBestMode.EXCLUDE_ALL_EXCEPT;
     }
 
     @ConfigItem(
@@ -90,7 +92,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 2
     )
-    default String pbsToIncludeOrExclude()
+    default String personalBestsToIncludeOrExclude()
     {
         return "";
     }
@@ -175,9 +177,9 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 9
     )
-    default AchievementDiariesEnum achievementDiariesThreshold()
+    default AchievementDiaryTier achievementDiariesThreshold()
     {
-        return AchievementDiariesEnum.ALL;
+        return AchievementDiaryTier.ALL;
     }
 
     @ConfigItem(
@@ -187,7 +189,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 10
     )
-    default boolean filterCombatDiaries()
+    default boolean filterCombatAchievementTiers()
     {
         return false;
     }
@@ -199,7 +201,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 11
     )
-    default boolean filterCombatDiaryTasks()
+    default boolean filterCombatAchievementTasks()
     {
         return false;
     }
@@ -211,9 +213,9 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 12
     )
-    default CombatDiariesEnum combatDiariesThreshold()
+    default CombatAchievementTier combatAchievementThreshold()
     {
-        return CombatDiariesEnum.ALL;
+        return CombatAchievementTier.ALL;
     }
 
     @ConfigItem(
@@ -235,7 +237,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 14
     )
-    default boolean filterCombatLevelUpMessage()
+    default boolean filterCombatLevelUps()
     {
         return false;
     }
@@ -247,7 +249,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionGeneral,
             position = 15
     )
-    default int filterCombatLevelUpThreshold()
+    default int combatLevelUpThreshold()
     {
         return 127;
     }
@@ -356,7 +358,7 @@ public interface GuildSpamFilterConfig extends Config
             section = filterSectionCollectionLog,
             position = 6
     )
-    default int filterCollectionLogThreshold()
+    default int collectionLogThreshold()
     {
         return 1444;
     }
@@ -565,7 +567,7 @@ public interface GuildSpamFilterConfig extends Config
             position = 0,
             hidden = false
     )
-    default String excludedPlayerNames()
+    default String alwaysIncludedPlayerNames()
     {
         return "";
     }

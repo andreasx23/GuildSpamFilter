@@ -1,8 +1,8 @@
 package com.GuildSpamFilter;
 
 import com.GuildSpamFilter.Handlers.CollectionLogHandler;
-import com.GuildSpamFilter.Models.Categori;
-import com.GuildSpamFilter.Models.Section;
+import com.GuildSpamFilter.Models.CollectionLogPage;
+import com.GuildSpamFilter.Models.CollectionLogTab;
 import net.runelite.api.Client;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +18,7 @@ import static org.mockito.Mockito.mock;
 
 public class CollectionLogHandlerTest
 {
-    private ArrayList<Categori> categories;
+    private ArrayList<CollectionLogTab> tabs;
 
     @Before
     public void readCollectionLog()
@@ -36,16 +36,16 @@ public class CollectionLogHandlerTest
                 .page("All Pets", "Pet kraken", "Olmlet")
                 .installOn(client);
 
-        categories = new CollectionLogHandler().ReadData(client);
+        tabs = new CollectionLogHandler().readData(client);
     }
 
     @Test
     public void readsTheTabsInGameOrder()
     {
         List<String> names = new ArrayList<>();
-        for (Categori categori : categories)
+        for (CollectionLogTab tab : tabs)
         {
-            names.add(categori.name);
+            names.add(tab.name);
         }
 
         assertEquals(Arrays.asList("Bosses", "Raids", "Clues", "Minigames", "Other"), names);
@@ -54,42 +54,42 @@ public class CollectionLogHandlerTest
     @Test
     public void readsEachPageWithItsItemNames()
     {
-        List<Section> bossPages = category("Bosses").sections;
+        List<CollectionLogPage> bossPages = tab("Bosses").pages;
 
         assertEquals(2, bossPages.size());
         assertEquals("Abyssal Sire", bossPages.get(0).name);
-        assertEquals(Arrays.asList("Abyssal orphan", "Abyssal whip"), bossPages.get(0).collectionLogs);
+        assertEquals(Arrays.asList("Abyssal orphan", "Abyssal whip"), bossPages.get(0).itemNames);
         assertEquals("Kraken", bossPages.get(1).name);
-        assertEquals(Arrays.asList("Pet kraken", "Trident of the seas (full)"), bossPages.get(1).collectionLogs);
+        assertEquals(Arrays.asList("Pet kraken", "Trident of the seas (full)"), bossPages.get(1).itemNames);
     }
 
     @Test
     public void collectsEveryItemInATabInLowercase()
     {
-        Categori bosses = category("Bosses");
+        CollectionLogTab bosses = tab("Bosses");
 
-        assertEquals(4, bosses.allItems.size());
-        assertTrue(bosses.allItems.contains("abyssal whip"));
-        assertTrue(bosses.allItems.contains("trident of the seas (full)"));
-        assertFalse(bosses.allItems.contains("Abyssal whip"));
+        assertEquals(4, bosses.lowercaseItemNames.size());
+        assertTrue(bosses.lowercaseItemNames.contains("abyssal whip"));
+        assertTrue(bosses.lowercaseItemNames.contains("trident of the seas (full)"));
+        assertFalse(bosses.lowercaseItemNames.contains("Abyssal whip"));
     }
 
     @Test
     public void keepsItemsInEveryTabTheyAppearIn()
     {
-        assertTrue(category("Bosses").allItems.contains("pet kraken"));
-        assertTrue(category("Other").allItems.contains("pet kraken"));
-        assertTrue(category("Raids").allItems.contains("olmlet"));
-        assertTrue(category("Other").allItems.contains("olmlet"));
+        assertTrue(tab("Bosses").lowercaseItemNames.contains("pet kraken"));
+        assertTrue(tab("Other").lowercaseItemNames.contains("pet kraken"));
+        assertTrue(tab("Raids").lowercaseItemNames.contains("olmlet"));
+        assertTrue(tab("Other").lowercaseItemNames.contains("olmlet"));
     }
 
-    private Categori category(String name)
+    private CollectionLogTab tab(String name)
     {
-        for (Categori categori : categories)
+        for (CollectionLogTab tab : tabs)
         {
-            if (categori.name.equals(name))
+            if (tab.name.equals(name))
             {
-                return categori;
+                return tab;
             }
         }
 

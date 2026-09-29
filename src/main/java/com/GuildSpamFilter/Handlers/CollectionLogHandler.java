@@ -1,7 +1,7 @@
 package com.GuildSpamFilter.Handlers;
 
-import com.GuildSpamFilter.Models.Categori;
-import com.GuildSpamFilter.Models.Section;
+import com.GuildSpamFilter.Models.CollectionLogPage;
+import com.GuildSpamFilter.Models.CollectionLogTab;
 import net.runelite.api.Client;
 import net.runelite.api.StructComposition;
 
@@ -20,35 +20,35 @@ public class CollectionLogHandler
     private static final int PAGE_NAME_PARAM_ID = 689;
     private static final int PAGE_ITEMS_ENUM_PARAM_ID = 690;
 
-    public ArrayList<Categori> ReadData(Client client)
+    public ArrayList<CollectionLogTab> readData(Client client)
     {
-        ArrayList<Categori> categoris = new ArrayList<>();
+        ArrayList<CollectionLogTab> tabs = new ArrayList<>();
 
         for (int tabStructId : client.getEnum(TABS_ENUM_ID).getIntVals())
         {
-            StructComposition tab = client.getStructComposition(tabStructId);
-            Categori categori = new Categori();
-            categori.name = tab.getStringValue(TAB_NAME_PARAM_ID);
+            StructComposition tabStruct = client.getStructComposition(tabStructId);
+            CollectionLogTab tab = new CollectionLogTab();
+            tab.name = tabStruct.getStringValue(TAB_NAME_PARAM_ID);
 
-            for (int pageStructId : client.getEnum(tab.getIntValue(TAB_PAGES_ENUM_PARAM_ID)).getIntVals())
+            for (int pageStructId : client.getEnum(tabStruct.getIntValue(TAB_PAGES_ENUM_PARAM_ID)).getIntVals())
             {
-                StructComposition page = client.getStructComposition(pageStructId);
-                Section section = new Section();
-                section.name = page.getStringValue(PAGE_NAME_PARAM_ID);
+                StructComposition pageStruct = client.getStructComposition(pageStructId);
+                CollectionLogPage page = new CollectionLogPage();
+                page.name = pageStruct.getStringValue(PAGE_NAME_PARAM_ID);
 
-                for (int itemId : client.getEnum(page.getIntValue(PAGE_ITEMS_ENUM_PARAM_ID)).getIntVals())
+                for (int itemId : client.getEnum(pageStruct.getIntValue(PAGE_ITEMS_ENUM_PARAM_ID)).getIntVals())
                 {
                     String itemName = client.getItemDefinition(itemId).getName();
-                    section.collectionLogs.add(itemName);
-                    categori.allItems.add(itemName.toLowerCase());
+                    page.itemNames.add(itemName);
+                    tab.lowercaseItemNames.add(itemName.toLowerCase());
                 }
 
-                categori.sections.add(section);
+                tab.pages.add(page);
             }
 
-            categoris.add(categori);
+            tabs.add(tab);
         }
 
-        return categoris;
+        return tabs;
     }
 }
