@@ -66,7 +66,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private HashSet<String> alwaysIncludedPlayerNames;
     private ArrayList<Categori> categoris;
     private HashMap<String, Integer> raidItemsIds;
-    private HashMap<String, Integer> raidItemPrices;
+    private HashMap<String, Long> raidItemPrices;
 
     @Inject
     private ItemManager _itemManager;
@@ -85,7 +85,7 @@ public class GuildSpamFilterPlugin extends Plugin
         customFilters = new HashSet<String>();
         alwaysIncludedPlayerNames = new HashSet<String>();
         raidItemsIds = new HashMap<String, Integer>();
-        raidItemPrices = new HashMap<String, Integer>();
+        raidItemPrices = new HashMap<String, Long>();
 
         CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
         categoris = collectionLogHandler.ReadData();
@@ -121,7 +121,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             String key = kv.getKey();
             int value = kv.getValue();
-            int itemPrice = _itemManager.getItemPrice(value);
+            long itemPrice = _itemManager.getItemPrice(value);
             raidItemPrices.put(key.toLowerCase(), itemPrice);
         }
     }
@@ -465,7 +465,7 @@ public class GuildSpamFilterPlugin extends Plugin
 
             if (raidItemPrices.containsKey(item))
             {
-                Integer gpValue = raidItemPrices.get(item);
+                long gpValue = raidItemPrices.get(item);
                 if (gpValue < config.raidLootGpThreshold() ||
                         gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
                 {
