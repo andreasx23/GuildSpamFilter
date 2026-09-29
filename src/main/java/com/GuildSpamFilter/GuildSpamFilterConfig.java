@@ -16,7 +16,7 @@ public interface GuildSpamFilterConfig extends Config
             position = 0,
             closedByDefault = false,
             name = "General Filters",
-            description = "Filter common clan broadcasts including personal bests, pets, quest completions, and member activity"
+            description = "Filter common clan broadcasts including personal bests, pets, quests, achievement diaries, Combat Achievements and clan member activity"
     )
     final String filterSectionGeneral = "General Filters";
 
@@ -24,7 +24,7 @@ public interface GuildSpamFilterConfig extends Config
             position = 1,
             closedByDefault = true,
             name = "Collection Log Filters",
-            description = "Filter collection log completion broadcasts from bosses, raids, clues, minigames, and other activities"
+            description = "Filter new collection log item broadcasts by collection log tab, or by how many slots the player has"
     )
     final String filterSectionCollectionLog = "Collection Log Filters";
 
@@ -40,7 +40,7 @@ public interface GuildSpamFilterConfig extends Config
             position = 3,
             closedByDefault = true,
             name = "PvM Filters",
-            description = "Filter PvM broadcasts including raid drops, boss drops, and rare item notifications"
+            description = "Filter PvM broadcasts including raid loot, drops and rare drops"
     )
     final String filterSectionPvm = "PvM Filters";
 
@@ -48,7 +48,7 @@ public interface GuildSpamFilterConfig extends Config
             position = 4,
             closedByDefault = true,
             name = "PvP Filters",
-            description = "Filter PvP broadcasts including player kills, deaths, and loot notifications"
+            description = "Filter PvP broadcasts for player kills and deaths"
     )
     final String filterSectionPvp = "PvP Filters";
 
@@ -56,7 +56,7 @@ public interface GuildSpamFilterConfig extends Config
             position = 5,
             closedByDefault = true,
             name = "Miscellaneous",
-            description = "Additional filtering options including player whitelists and miscellaneous broadcasts"
+            description = "Players whose broadcasts are always shown, and Leagues broadcasts"
     )
     final String miscellaneous = "Miscellaneous";
 
@@ -76,7 +76,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "pbToIncludeOrExcludeEnum",
             name = "Personal Best Mode",
-            description = "Set the personal best filtering mode. Include mode hides only PBs matching your list. Exclude mode shows only PBs matching your list. (Default: Exclude all except)",
+            description = "Include all except removes only the personal bests in your list. Exclude all except removes every personal best except the ones in your list. (Default: Exclude all except)",
             section = filterSectionGeneral,
             position = 1
     )
@@ -88,7 +88,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "pbsToIncludeOrExclude",
             name = "Personal Bests to Include or Exclude",
-            description = "Comma-separated list of personal bests to include or exclude based on the selected mode (e.g: Chambers of Xeric, theatre of blood). Case insensitive.",
+            description = "Comma-separated list of personal bests to include or exclude based on the selected mode (e.g. Chambers of Xeric, theatre of blood). Case insensitive.",
             section = filterSectionGeneral,
             position = 2
     )
@@ -173,7 +173,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "achievementDiariesThreshold",
             name = "Achievement Diary Threshold",
-            description = "Set the minimum achievement diary difficulty to filter broadcasts (Default: All)",
+            description = "Achievement diaries easier than this tier are removed. All removes every diary. (Default: All)",
             section = filterSectionGeneral,
             position = 9
     )
@@ -184,8 +184,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterCombatDiaries",
-            name = "Filter Combat Diaries",
-            description = "Remove combat diary completion broadcasts from clan chat",
+            name = "Filter Combat Achievement Tiers",
+            description = "Remove broadcasts for unlocking a Combat Achievement reward tier from clan chat",
             section = filterSectionGeneral,
             position = 10
     )
@@ -196,8 +196,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterCombatDiaryTasks",
-            name = "Filter Combat Diary Tasks",
-            description = "Remove combat diary task completion broadcasts from clan chat",
+            name = "Filter Combat Achievement Tasks",
+            description = "Remove Combat Achievement task completion broadcasts from clan chat",
             section = filterSectionGeneral,
             position = 11
     )
@@ -208,8 +208,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "combatDiariesThreshold",
-            name = "Combat Diary Threshold",
-            description = "Set the minimum combat diary difficulty to filter broadcasts (Default: All)",
+            name = "Combat Achievement Threshold",
+            description = "Combat Achievement tiers and tasks easier than this tier are removed. All removes every one. (Default: All)",
             section = filterSectionGeneral,
             position = 12
     )
@@ -245,7 +245,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "filterCombatLevelUpThreshold",
             name = "Combat Level Up Threshold",
-            description = "Set the minimum combat level required to filter broadcasts (Default: 127)",
+            description = "Combat level ups below this level are removed. The default removes all of them, including max combat. (Default: 127)",
             section = filterSectionGeneral,
             position = 15
     )
@@ -256,8 +256,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterDefaultMessage",
-            name = "Filter Default Login Message",
-            description = "Remove default login message from clan chat broadcasts",
+            name = "Filter Clan Login Message",
+            description = "Remove the \"To talk in your clan's channel, start each line of chat with // or /c.\" message shown when you log in",
             section = filterSectionGeneral,
             position = 16
     )
@@ -269,7 +269,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
-            description = "Comma-separated list of custom terms to filter from broadcasts (e.g: Chambers of Xeric, theatre of blood). Any message containing these terms will be removed. Case insensitive.",
+            description = "Comma-separated list of custom terms to filter from broadcasts (e.g. Chambers of Xeric, theatre of blood). Any broadcast containing these terms will be removed. Case insensitive.",
             section = filterSectionGeneral,
             position = 17
     )
@@ -281,8 +281,8 @@ public interface GuildSpamFilterConfig extends Config
     // Collection Log
     @ConfigItem(
             keyName = "filterCollectionLogBosses",
-            name = "Filter Collection Log Boss Drops",
-            description = "Remove collection log boss drop broadcasts from clan chat",
+            name = "Filter Bosses Tab",
+            description = "Remove new collection log item broadcasts for items on the Bosses tab",
             section = filterSectionCollectionLog,
             position = 0
     )
@@ -293,8 +293,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterCollectionLogRaids",
-            name = "Filter Collection Log Raid Drops",
-            description = "Remove collection log raid drop broadcasts from clan chat",
+            name = "Filter Raids Tab",
+            description = "Remove new collection log item broadcasts for items on the Raids tab",
             section = filterSectionCollectionLog,
             position = 1
     )
@@ -305,8 +305,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterCollectionLogClues",
-            name = "Filter Collection Log Clue Drops",
-            description = "Remove collection log clue scroll drop broadcasts from clan chat",
+            name = "Filter Clues Tab",
+            description = "Remove new collection log item broadcasts for items on the Clues tab",
             section = filterSectionCollectionLog,
             position = 2
     )
@@ -317,8 +317,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterCollectionLogMinigames",
-            name = "Filter Collection Log Minigame Drops",
-            description = "Remove collection log minigame drop broadcasts from clan chat",
+            name = "Filter Minigames Tab",
+            description = "Remove new collection log item broadcasts for items on the Minigames tab",
             section = filterSectionCollectionLog,
             position = 3
     )
@@ -329,8 +329,8 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterCollectionLogOther",
-            name = "Filter Collection Log Other Drops",
-            description = "Remove collection log miscellaneous drop broadcasts from clan chat",
+            name = "Filter Other Tab",
+            description = "Remove new collection log item broadcasts for items on the Other tab",
             section = filterSectionCollectionLog,
             position = 4
     )
@@ -342,7 +342,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "enableCollectionLogThreshold",
             name = "Enable Collection Log Threshold",
-            description = "Enable filtering based on collection log slot count threshold",
+            description = "Remove new collection log item broadcasts from players with fewer slots than the Collection Log Threshold",
             section = filterSectionCollectionLog,
             position = 5
     )
@@ -354,7 +354,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "filterCollectionLogThreshold",
             name = "Collection Log Threshold",
-            description = "Set the minimum collection log slot count required to filter broadcasts (Default: 1444)",
+            description = "When the threshold is enabled, broadcasts from players with fewer collection log slots than this are removed. (Default: 1444)",
             section = filterSectionCollectionLog,
             position = 6
     )
@@ -379,7 +379,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "raidLootGpThreshold",
             name = "Raid Loot GP Threshold",
-            description = "Set the minimum GP value required for raid loot to be filtered (Default: 2,147,483,647)",
+            description = "Raid loot worth less than this, based on its Grand Exchange price, is removed. The default removes all of it. (Default: 2,147,483,647)",
             section = filterSectionPvm,
             position = 1
     )
@@ -403,7 +403,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "lootGpThreshold",
             name = "Loot GP Threshold",
-            description = "Set the minimum GP value required for loot to be filtered (Default: 2,147,483,647)",
+            description = "Drops worth less than this are removed. The default removes all of them. (Default: 2,147,483,647)",
             section = filterSectionPvm,
             position = 3
     )
@@ -417,7 +417,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Rare Drops",
             description = "Remove rare drop broadcasts from clan chat",
             section = filterSectionPvm,
-            position = 2
+            position = 4
     )
     default boolean filterRareDrops()
     {
@@ -440,7 +440,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "totalLevelThreshold",
             name = "Total Level Threshold",
-            description = "Set the minimum total level required to filter milestone broadcasts (Default: 2376)",
+            description = "Total level milestones below this are removed. (Default: 2376)",
             section = filterSectionSkilling,
             position = 1
     )
@@ -454,7 +454,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Level Ups",
             description = "Remove skill level up broadcasts from clan chat",
             section = filterSectionSkilling,
-            position = 2
+            position = 3
     )
     default boolean filterLevelUp()
     {
@@ -463,10 +463,10 @@ public interface GuildSpamFilterConfig extends Config
 
     @ConfigItem(
             keyName = "filterMaxTotal",
-            name = "Filter Max Total Messages",
-            description = "Remove maximum total level achievement broadcasts from clan chat",
+            name = "Filter Max Total Level",
+            description = "Remove broadcasts for reaching the highest possible total level from clan chat",
             section = filterSectionSkilling,
-            position = 3
+            position = 2
     )
     default boolean filterMaxTotal()
     {
@@ -476,7 +476,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "levelThreshold",
             name = "Level Threshold",
-            description = "Set the minimum skill level required to filter level up broadcasts (Default: 100)",
+            description = "Level ups below this level are removed. The default removes all of them. (Default: 100)",
             section = filterSectionSkilling,
             position = 4
     )
@@ -500,7 +500,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "xpMilestoneThreshold",
             name = "XP Milestone Threshold",
-            description = "Set the minimum skill experience required to filter milestone broadcasts (Default: 2,147,483,647)",
+            description = "XP milestones below this amount of XP are removed. The default removes all of them. (Default: 2,147,483,647)",
             section = filterSectionSkilling,
             position = 6
     )
@@ -525,7 +525,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "playerDiedThreshold",
             name = "Player Death Threshold",
-            description = "Set the minimum GP value lost required to filter death broadcasts (Default: 2,147,483,647)",
+            description = "Deaths that lost less than this much loot are removed. The default removes all of them. (Default: 2,147,483,647)",
             section = filterSectionPvp,
             position = 1
     )
@@ -549,7 +549,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "playerKillThreshold",
             name = "Player Kill Threshold",
-            description = "Set the minimum GP value gained required to filter kill broadcasts (Default: 2,147,483,647)",
+            description = "Kills that gained less than this much loot are removed. The default removes all of them. (Default: 2,147,483,647)",
             section = filterSectionPvp,
             position = 3
     )
@@ -562,7 +562,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "excludedPlayerNames",
             name = "Player Names to Always Include",
-            description = "Comma-separated list of player names whose broadcasts will always be shown regardless of other filter settings (e.g: Biceps Btw, store biceps). Case insensitive.",
+            description = "Comma-separated list of player names whose broadcasts will always be shown regardless of other filter settings (e.g. Biceps Btw, store biceps). Case insensitive.",
             section = miscellaneous,
             position = 0,
             hidden = false

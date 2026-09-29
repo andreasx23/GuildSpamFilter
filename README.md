@@ -14,11 +14,11 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
 
 ## What you can hide
 
-- **General:** personal bests, pets, quest completions, achievement diaries, combat
-  achievements, combat level-ups, hardcore deaths, new and kicked members, and the
-  clan chat login message
-- **Collection log:** by category (bosses, raids, clues, minigames, other), or only
-  for players below a set number of collection log slots
+- **General:** personal bests, pets, quest completions, achievement diaries, Combat
+  Achievements, combat level-ups, hardcore deaths, new and kicked members, and the
+  clan login message
+- **Collection log:** by collection log tab (Bosses, Raids, Clues, Minigames, Other),
+  or only for players below a set number of collection log slots
 - **Skilling:** level-ups, XP milestones, total level milestones and max total
 - **PvM:** raid loot, regular drops and rare drops
 - **PvP:** player kills and deaths
@@ -26,8 +26,9 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
 
 ## Extras
 
-- **Always show these players:** broadcasts about the players you list are never
+- **Player names to always include:** broadcasts about the players you list are never
   hidden. Handy for friends or your own account.
 - **Custom filters:** hide any broadcast that contains words you choose,
   such as `Chambers of Xeric`.
-- **Personal bests:** hide every PB except the ones you list, or hide only the ones you list.
+- **Personal bests:** hide every personal best except the ones you list, or hide only
+  the ones you list.
