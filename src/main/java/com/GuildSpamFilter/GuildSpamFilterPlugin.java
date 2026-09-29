@@ -8,6 +8,7 @@ import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -87,8 +88,9 @@ public class GuildSpamFilterPlugin extends Plugin
         raidItemsIds = new HashMap<String, Integer>();
         raidItemPrices = new HashMap<String, Long>();
 
-        CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
-        categoris = collectionLogHandler.ReadData();
+        categoris = new ArrayList<Categori>();
+
+        clientThread.invoke(this::LoadCollectionLog);
         UpdatePbsToIncludeOrExclude();
         UpdateCustomFilters();
         UpdateAlwaysIncludedPlayerIgnsFromBroadcasts();
@@ -108,6 +110,28 @@ public class GuildSpamFilterPlugin extends Plugin
         raidItemPrices = null;
 
         clientThread.invoke(client::refreshChat);
+    }
+
+    private boolean LoadCollectionLog()
+    {
+        // The collection log is read from the game's cache, which isn't available until the game has loaded.
+        // Returning false makes the client thread try again on the next tick.
+        if (client.getGameState().getState() < GameState.LOGIN_SCREEN.getState())
+        {
+            return false;
+        }
+
+        CollectionLogHandler collectionLogHandler = new CollectionLogHandler();
+        categoris = collectionLogHandler.ReadData(client);
+
+        int itemCount = 0;
+        for (Categori categori : categoris)
+        {
+            itemCount += categori.allItems.size();
+        }
+
+        log.info("Loaded " + itemCount + " collection log items in " + categoris.size() + " categories");
+        return true;
     }
 
     private void SetupRaidItemPrices()

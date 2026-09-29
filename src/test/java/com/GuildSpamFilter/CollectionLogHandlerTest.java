@@ -3,6 +3,8 @@ package com.GuildSpamFilter;
 import com.GuildSpamFilter.Handlers.CollectionLogHandler;
 import com.GuildSpamFilter.Models.Categori;
 import com.GuildSpamFilter.Models.Section;
+import net.runelite.api.Client;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -12,14 +14,33 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 public class CollectionLogHandlerTest
 {
-    private final ArrayList<Categori> categories = new CollectionLogHandler().ReadData();
+    private ArrayList<Categori> categories;
+
+    @Before
+    public void readCollectionLog()
+    {
+        Client client = mock(Client.class);
+        new FakeCollectionLog()
+                .tab("Bosses")
+                .page("Abyssal Sire", "Abyssal orphan", "Abyssal whip")
+                .page("Kraken", "Pet kraken", "Trident of the seas (full)")
+                .tab("Raids").page("Chambers of Xeric", "Olmlet", "Twisted bow")
+                .tab("Clues").page("Hard Treasure Trails", "3rd age amulet")
+                .tab("Minigames").page("Barbarian Assault", "Fighter hat")
+                .tab("Other")
+                .page("Aerial Fishing", "Golden tench")
+                .page("All Pets", "Pet kraken", "Olmlet")
+                .installOn(client);
+
+        categories = new CollectionLogHandler().ReadData(client);
+    }
 
     @Test
-    public void readsTheFiveCollectionLogCategories()
+    public void readsTheTabsInGameOrder()
     {
         List<String> names = new ArrayList<>();
         for (Categori categori : categories)
@@ -31,44 +52,35 @@ public class CollectionLogHandlerTest
     }
 
     @Test
-    public void knowsItemsFromEachCategoryInLowercase()
+    public void readsEachPageWithItsItemNames()
     {
-        assertTrue(category("Bosses").allItems.contains("abyssal whip"));
-        assertTrue(category("Raids").allItems.contains("twisted bow"));
-        assertTrue(category("Clues").allItems.contains("mole slippers"));
-        assertTrue(category("Minigames").allItems.contains("fighter hat"));
-        assertTrue(category("Other").allItems.contains("golden tench"));
+        List<Section> bossPages = category("Bosses").sections;
+
+        assertEquals(2, bossPages.size());
+        assertEquals("Abyssal Sire", bossPages.get(0).name);
+        assertEquals(Arrays.asList("Abyssal orphan", "Abyssal whip"), bossPages.get(0).collectionLogs);
+        assertEquals("Kraken", bossPages.get(1).name);
+        assertEquals(Arrays.asList("Pet kraken", "Trident of the seas (full)"), bossPages.get(1).collectionLogs);
     }
 
     @Test
-    public void everySectionHasANameAndItems()
+    public void collectsEveryItemInATabInLowercase()
     {
-        for (Categori categori : categories)
-        {
-            assertFalse(categori.name + " has no sections", categori.sections.isEmpty());
-            for (Section section : categori.sections)
-            {
-                assertFalse("A section in " + categori.name + " has no name", section.name.trim().isEmpty());
-                assertFalse(categori.name + "/" + section.name + " has no items", section.collectionLogs.isEmpty());
-            }
-        }
+        Categori bosses = category("Bosses");
+
+        assertEquals(4, bosses.allItems.size());
+        assertTrue(bosses.allItems.contains("abyssal whip"));
+        assertTrue(bosses.allItems.contains("trident of the seas (full)"));
+        assertFalse(bosses.allItems.contains("Abyssal whip"));
     }
 
     @Test
-    public void itemNamesHaveNoStrayWhitespace()
+    public void keepsItemsInEveryTabTheyAppearIn()
     {
-        for (Categori categori : categories)
-        {
-            for (Section section : categori.sections)
-            {
-                for (String item : section.collectionLogs)
-                {
-                    String where = categori.name + "/" + section.name + ": '" + item + "'";
-                    assertFalse("Empty item name in " + where, item.trim().isEmpty());
-                    assertEquals("Extra spaces around " + where, item.trim(), item);
-                }
-            }
-        }
+        assertTrue(category("Bosses").allItems.contains("pet kraken"));
+        assertTrue(category("Other").allItems.contains("pet kraken"));
+        assertTrue(category("Raids").allItems.contains("olmlet"));
+        assertTrue(category("Other").allItems.contains("olmlet"));
     }
 
     private Categori category(String name)
@@ -81,7 +93,6 @@ public class CollectionLogHandlerTest
             }
         }
 
-        fail("No collection log category named " + name);
-        return null;
+        throw new AssertionError("No collection log tab named " + name);
     }
 }

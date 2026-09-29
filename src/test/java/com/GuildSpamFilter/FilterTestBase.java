@@ -3,20 +3,25 @@ package com.GuildSpamFilter;
 import com.google.inject.Guice;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import org.junit.Before;
 
+import java.util.function.BooleanSupplier;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Runs the real plugin with the game client, item prices and config replaced by fakes,
+ * Runs the real plugin with the game client, item prices, collection log and config replaced by fakes,
  * and sends broadcasts through it the same way the game's chat script does.
  */
 public abstract class FilterTestBase
@@ -35,6 +40,22 @@ public abstract class FilterTestBase
         itemManager = mock(ItemManager.class);
         // Every setting keeps its real default value unless a test changes it
         config = mock(GuildSpamFilterConfig.class, CALLS_REAL_METHODS);
+
+        when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        // Run client thread tasks straight away, like the client does when it's already on the client thread
+        doAnswer(invocation -> ((BooleanSupplier) invocation.getArgument(0)).getAsBoolean())
+                .when(clientThread).invoke(any(BooleanSupplier.class));
+
+        new FakeCollectionLog()
+                .tab("Bosses").page("Abyssal Sire", "Abyssal orphan", "Abyssal whip")
+                .tab("Raids").page("Chambers of Xeric", "Olmlet", "Twisted bow")
+                .tab("Clues")
+                .page("Beginner Treasure Trails", "Mole slippers")
+                .page("Easy Treasure Trails", "Blue skirt (g)")
+                .page("Hard Treasure Trails", "3rd age amulet")
+                .tab("Minigames").page("Barbarian Assault", "Fighter hat")
+                .tab("Other").page("Aerial Fishing", "Golden tench")
+                .installOn(client);
 
         plugin = new GuildSpamFilterPlugin();
         Guice.createInjector(binder ->
