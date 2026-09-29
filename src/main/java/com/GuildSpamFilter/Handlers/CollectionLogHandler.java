@@ -70,7 +70,10 @@ public class CollectionLogHandler
         {
             for (Section section : categori.sections)
             {
-                categori.allItems.addAll(section.collectionLogs);
+                for (String item : section.collectionLogs)
+                {
+                    categori.allItems.add(item.toLowerCase());
+                }
             }
         }
 

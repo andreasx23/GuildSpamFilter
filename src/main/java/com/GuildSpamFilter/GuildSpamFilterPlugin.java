@@ -229,6 +229,11 @@ public class GuildSpamFilterPlugin extends Plugin
 
     private boolean isBroadcastMessageForPlayer(String playerName, String broadcastMessage)
     {
+        if (broadcastMessage.length() <= playerName.length())
+        {
+            return false;
+        }
+
         for (int i = 0; i < playerName.length(); i++)
         {
             char currentPlayerChar = playerName.charAt(i);
@@ -244,7 +249,8 @@ public class GuildSpamFilterPlugin extends Plugin
             }
         }
 
-        return true;
+        // The broadcast's name has to end here too, so "Bob" doesn't also match "Bobby"
+        return Character.isSpaceChar(broadcastMessage.charAt(playerName.length()));
     }
 
     @Subscribe
@@ -598,12 +604,15 @@ public class GuildSpamFilterPlugin extends Plugin
                 !message.contains("combat level"))
         {
             log.debug("New level up detected..");
-            String textToFind = "level of";
-            int index = message.indexOf(textToFind);
+            // Reads the level from both "Fishing level 90." and "a total level of 2,000."
+            String textToFind = "level ";
+            int index = message.lastIndexOf(textToFind);
+            String part = index != -1
+                    ? message.substring(index + textToFind.length()).replaceAll("[^0-9]", "")
+                    : "";
 
-            if (index != -1)
+            if (!part.isEmpty())
             {
-                String part = message.substring(index + textToFind.length() + 1, message.length() - 1);
                 long level = Long.parseLong(part);
                 if (level < config.levelThreshold())
                 {
@@ -664,7 +673,8 @@ public class GuildSpamFilterPlugin extends Plugin
         int index = message.indexOf(":") + 1;
         int index2 = message.lastIndexOf("(");
         String part = message.substring(index, index2)
-                             .trim();
+                             .trim()
+                             .toLowerCase();
 
         for (Categori categori : categoris)
         {
@@ -888,8 +898,9 @@ public class GuildSpamFilterPlugin extends Plugin
         String indexText = "";
         if (config.filterCombatDiaries() && message.contains("Combat Achievement"))
         {
-            indexText = "the";
-            index = message.indexOf(indexText);
+            // Search from the end, so a player name containing "the" isn't mistaken for it
+            indexText = " the";
+            index = message.lastIndexOf(indexText + " ");
         }
         else if (config.filterCombatDiaryTasks() && message.contains("combat task"))
         {
@@ -913,13 +924,13 @@ public class GuildSpamFilterPlugin extends Plugin
             {
                 String combatDiaryLevel = part.substring(0, index2);
                 CombatDiariesEnum selectedCombatDiaryThreshold = config.combatDiariesThreshold();
-                CombatDiariesEnum messageCombatDiaryLevel = CombatDiariesEnum.valueOf(combatDiaryLevel.toUpperCase());
-                if (selectedCombatDiaryThreshold.getId() > messageCombatDiaryLevel.getId())
+                int messageCombatDiaryLevel = getCombatDiaryTierId(combatDiaryLevel);
+                if (messageCombatDiaryLevel == -1 || selectedCombatDiaryThreshold.getId() > messageCombatDiaryLevel)
                 {
                     log.debug("Combat Achievement diary threshold was set to: " +
                             selectedCombatDiaryThreshold +
                             " and the incoming Combat Achievement diary was: " +
-                            messageCombatDiaryLevel +
+                            combatDiaryLevel +
                             " removing it..");
                     return true;
                 }
@@ -934,16 +945,31 @@ public class GuildSpamFilterPlugin extends Plugin
         return false;
     }
 
+    private int getCombatDiaryTierId(String tier)
+    {
+        // Easy isn't offered as a threshold, so it isn't part of CombatDiariesEnum
+        if (EASY.equalsIgnoreCase(tier))
+        {
+            return 0;
+        }
+
+        for (CombatDiariesEnum combatDiaryTier : CombatDiariesEnum.values())
+        {
+            if (combatDiaryTier != CombatDiariesEnum.ALL && combatDiaryTier.toString().equalsIgnoreCase(tier))
+            {
+                return combatDiaryTier.getId();
+            }
+        }
+
+        return -1;
+    }
+
     private boolean filterAchievementDiaries(String message)
     {
-        if (config.filterAchievementDiaries() &&
-                (message.contains(EASY) ||
-                         message.contains(AchievementDiariesEnum.MEDIUM.toString()) ||
-                         message.contains(AchievementDiariesEnum.HARD.toString()) ||
-                         message.contains(AchievementDiariesEnum.ELITE.toString())))
+        if (config.filterAchievementDiaries() && message.contains(" diary"))
         {
             log.debug("New achievement diary detected..");
-            String textToFind = "the";
+            String textToFind = "completed the";
             int index = message.indexOf(textToFind);
             if (index != -1)
             {
@@ -953,13 +979,13 @@ public class GuildSpamFilterPlugin extends Plugin
                 {
                     String achievementDiaryLevel = part.substring(0, index2);
                     AchievementDiariesEnum achievementDiaryThreshold = config.achievementDiariesThreshold();
-                    AchievementDiariesEnum messageAchievementDiaryLevel = AchievementDiariesEnum.valueOf(achievementDiaryLevel.toUpperCase());
-                    if (achievementDiaryThreshold.getId() > messageAchievementDiaryLevel.getId())
+                    int messageAchievementDiaryLevel = getAchievementDiaryTierId(achievementDiaryLevel);
+                    if (messageAchievementDiaryLevel == -1 || achievementDiaryThreshold.getId() > messageAchievementDiaryLevel)
                     {
                         log.debug("Achievement diary threshold was set to: " +
                                 achievementDiaryThreshold +
                                 " and the incoming achievement diary was: " +
-                                messageAchievementDiaryLevel +
+                                achievementDiaryLevel +
                                 " removing it..");
                         return true;
                     }
@@ -973,6 +999,25 @@ public class GuildSpamFilterPlugin extends Plugin
         }
 
         return false;
+    }
+
+    private int getAchievementDiaryTierId(String tier)
+    {
+        // Easy isn't offered as a threshold, so it isn't part of AchievementDiariesEnum
+        if (EASY.equalsIgnoreCase(tier))
+        {
+            return 0;
+        }
+
+        for (AchievementDiariesEnum diaryTier : AchievementDiariesEnum.values())
+        {
+            if (diaryTier != AchievementDiariesEnum.ALL && diaryTier.toString().equalsIgnoreCase(tier))
+            {
+                return diaryTier.getId();
+            }
+        }
+
+        return -1;
     }
 
     private boolean filterCustomFilters(String message)
