@@ -63,8 +63,9 @@ All logic lives in `GuildSpamFilterPlugin`:
   and a loaded game, so `startUp` schedules `loadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
   `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. It logs
   `Loaded N collection log items in 5 tabs, including M raid items` (N ≈ 1,700, M ≈ 67). `CollectionLogTab.lowercaseItemNames` is lowercase, and
-  `filterCollectionLogByTab` compares lowercase item names and switches on the tab names `Bosses`, `Raids`,
-  `Clues`, `Minigames`, `Other`.
+  `filterCollectionLogByTab` compares lowercase item names and switches on the tab name constants in
+  `CollectionLogTab` (`BOSSES`, `RAIDS`, `CLUES`, `MINIGAMES`, `OTHER`), which must match the game's tab names
+  exactly. Always use the constants; test fakes deliberately spell the names out.
 
 ## Tests
 

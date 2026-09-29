@@ -128,7 +128,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             itemCount += tab.lowercaseItemNames.size();
 
-            if (tab.name.equals("Raids"))
+            if (tab.name.equals(CollectionLogTab.RAIDS))
             {
                 for (CollectionLogPage page : tab.pages)
                 {
@@ -659,35 +659,35 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             switch (tab.name)
             {
-                case "Bosses":
+                case CollectionLogTab.BOSSES:
                     if (config.filterCollectionLogBosses() && tab.lowercaseItemNames.contains(itemName))
                     {
                         log.debug("New collection log item detected removing it..");
                         return true;
                     }
                     break;
-                case "Raids":
+                case CollectionLogTab.RAIDS:
                     if (config.filterCollectionLogRaids() && tab.lowercaseItemNames.contains(itemName))
                     {
                         log.debug("New collection log item detected removing it..");
                         return true;
                     }
                     break;
-                case "Clues":
+                case CollectionLogTab.CLUES:
                     if (config.filterCollectionLogClues() && tab.lowercaseItemNames.contains(itemName))
                     {
                         log.debug("New collection log item detected removing it..");
                         return true;
                     }
                     break;
-                case "Minigames":
+                case CollectionLogTab.MINIGAMES:
                     if (config.filterCollectionLogMinigames() && tab.lowercaseItemNames.contains(itemName))
                     {
                         log.debug("New collection log item detected removing it..");
                         return true;
                     }
                     break;
-                case "Other":
+                case CollectionLogTab.OTHER:
                     if (config.filterCollectionLogOther() && tab.lowercaseItemNames.contains(itemName))
                     {
                         log.debug("New collection log item detected removing it..");

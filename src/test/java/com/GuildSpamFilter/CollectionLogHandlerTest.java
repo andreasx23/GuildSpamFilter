@@ -42,7 +42,7 @@ public class CollectionLogHandlerTest
     }
 
     @Test
-    public void readsTheTabsInGameOrder()
+    public void readsTheTabsInGameOrderUnderTheirConstantNames()
     {
         List<String> names = new ArrayList<>();
         for (CollectionLogTab tab : tabs)
@@ -50,7 +50,9 @@ public class CollectionLogHandlerTest
             names.add(tab.name);
         }
 
-        assertEquals(Arrays.asList("Bosses", "Raids", "Clues", "Minigames", "Other"), names);
+        // The fake collection log spells out the game's names, so a mistyped constant fails here
+        assertEquals(Arrays.asList(CollectionLogTab.BOSSES, CollectionLogTab.RAIDS, CollectionLogTab.CLUES,
+                CollectionLogTab.MINIGAMES, CollectionLogTab.OTHER), names);
     }
 
     @Test
