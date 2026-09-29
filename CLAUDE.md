@@ -19,7 +19,7 @@ touched. Every filter is off by default, and threshold settings hide only broadc
 - On Windows from PowerShell use `.\gradlew.bat`. There is no linter or formatter.
 - To run the plugin in a real client, run `main` in `src/test/java/com/GuildSpamFilter/GuildSpamFilterTest.java`
   from IntelliJ (it is a launcher, not a unit test). RuneLite's example plugin passes `--developer-mode --debug`;
-  with `--debug` the plugin's `log.debug` output appears, including every broadcast as `Broadcast message: ...`,
+  with `--debug` the plugin's `log.debug` output appears, including every broadcast as `Checking broadcast: ...`,
   which is the way to capture real broadcast wording.
 - Gradle wrapper 8.10 and Lombok 1.18.30 are required on JDK 21+ (Gradle 7.4 cannot run on JDK 22, and Lombok
   older than 1.18.30 fails with `NoSuchFieldError ... JCImport qualid`).
@@ -116,7 +116,12 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
 ## Conventions
 
 - Allman braces, 4-space indentation, standard Java naming (camelCase methods and fields, no `_` prefixes, no
-  `Enum` suffix on types), and `log.debug` with string concatenation.
+  `Enum` suffix on types).
+- Logging uses SLF4J `{}` placeholders, never string concatenation. `info` is for once-per-session events (start,
+  stop, collection log loaded) and `warn` for problems that silently disable a filter. Per-broadcast logging is
+  `debug`: each broadcast is logged once as `Checking broadcast: …`, and a filter that hides it logs one
+  `Hiding … (<setting name as shown in the panel>: <value>)` line with the reason. A broadcast with no `Hiding` line
+  was shown, so don't add "detected" lines.
 - Spell names out instead of abbreviating (`personalBest`, not `pb`; `ChambersOfXeric`, not `Cox`). The exceptions
   are the game terms the settings panel itself uses: XP, GP, PvM and PvP.
 - `.idea/` is tracked. IntelliJ rewrites `.idea/compiler.xml` (the Lombok processor path) after Gradle dependency

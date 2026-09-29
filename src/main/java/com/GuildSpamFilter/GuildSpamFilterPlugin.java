@@ -82,7 +82,7 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void startUp() throws RuntimeException, IOException
     {
-        log.info("Clan Spam Filter started!");
+        log.info("Clan Spam Filter started");
         personalBestsToIncludeOrExclude = new HashSet<String>();
         customFilters = new HashSet<String>();
         alwaysIncludedPlayerNames = new HashSet<String>();
@@ -100,7 +100,7 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void shutDown()
     {
-        log.info("Clan Spam Filter stopped!");
+        log.info("Clan Spam Filter stopped");
         personalBestsToIncludeOrExclude = null;
         customFilters = null;
         alwaysIncludedPlayerNames = null;
@@ -128,6 +128,11 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             itemCount += tab.lowercaseItemNames.size();
 
+            if (!CollectionLogTab.KNOWN_NAMES.contains(tab.name))
+            {
+                log.warn("Unknown collection log tab \"{}\", so its items can't be filtered", tab.name);
+            }
+
             if (tab.name.equals(CollectionLogTab.RAIDS))
             {
                 for (CollectionLogPage page : tab.pages)
@@ -140,8 +145,13 @@ public class GuildSpamFilterPlugin extends Plugin
             }
         }
 
-        log.info("Loaded " + itemCount + " collection log items in " + collectionLogTabs.size() + " tabs, including " +
-                raidItemIds.size() + " raid items");
+        if (raidItemIds.isEmpty())
+        {
+            log.warn("Found no raid items in the collection log, so raid loot won't be filtered");
+        }
+
+        log.info("Loaded {} collection log items in {} tabs, including {} raid items",
+                itemCount, collectionLogTabs.size(), raidItemIds.size());
         return true;
     }
 
@@ -163,7 +173,7 @@ public class GuildSpamFilterPlugin extends Plugin
             }
         }
 
-        log.debug("New list: " + String.join(", ", personalBestsToIncludeOrExclude));
+        log.debug("Personal bests to include or exclude: {}", personalBestsToIncludeOrExclude);
     }
 
     private void updateCustomFilters()
@@ -184,7 +194,7 @@ public class GuildSpamFilterPlugin extends Plugin
             }
         }
 
-        log.debug("New list: " + String.join(", ", customFilters));
+        log.debug("Custom filters: {}", customFilters);
     }
 
     private void updateAlwaysIncludedPlayerNames()
@@ -205,7 +215,7 @@ public class GuildSpamFilterPlugin extends Plugin
             }
         }
 
-        log.debug("New list: " + String.join(", ", alwaysIncludedPlayerNames));
+        log.debug("Always-included players: {}", alwaysIncludedPlayerNames);
     }
 
     private boolean isBroadcastMessageForPlayer(String playerName, String broadcastMessage)
@@ -290,7 +300,7 @@ public class GuildSpamFilterPlugin extends Plugin
 
         Object messageAsObject = objectStack[objectStackSize - 1];
         String message = ((String)messageAsObject).trim();
-        log.debug("Broadcast message: " + message);
+        log.debug("Checking broadcast: {}", message);
 
         // Check if message should be filtered and update stack accordingly
         if (shouldFilterMessage(message))
@@ -347,7 +357,7 @@ public class GuildSpamFilterPlugin extends Plugin
             {
                 if (isBroadcastMessageForPlayer(playerName, lowercaseBroadcastMessage))
                 {
-                    log.debug("New broadcast for player detected skipping it.. Player name was: " + playerName);
+                    log.debug("Showing broadcast for always-included player {}", playerName);
                     return true;
                 }
             }
@@ -360,7 +370,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterLeaguesBroadcasts() && message.contains("<img=22>"))
         {
-            log.debug("Leagues broadcast detected..");
+            log.debug("Hiding Leagues broadcast");
             return true;
         }
 
@@ -371,7 +381,6 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterPersonalBests() && message.contains("achieved a new"))
         {
-            log.debug("New personal best detected.. Mode was set to: " + config.personalBestMode());
             String partWithoutPlayerName = message.substring(12);
             String lowercaseMessage = partWithoutPlayerName.toLowerCase();
 
@@ -404,7 +413,7 @@ public class GuildSpamFilterPlugin extends Plugin
 
         if (!found)
         {
-            log.debug("No match found removing it..");
+            log.debug("Hiding personal best that isn't in the list (Personal Best Mode: Exclude all except)");
             return true;
         }
 
@@ -428,7 +437,7 @@ public class GuildSpamFilterPlugin extends Plugin
 
         if (found)
         {
-            log.debug("Match found removing it..");
+            log.debug("Hiding personal best that is in the list (Personal Best Mode: Include all except)");
             return true;
         }
 
@@ -439,14 +448,13 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
         {
-            log.debug("New raid loot detected..");
             int startIndex = message.lastIndexOf(":");
             String itemStartPart = message.substring(startIndex);
             int endIndex = itemStartPart.lastIndexOf("(");
             String itemPart = itemStartPart.substring(1, endIndex);
-            String itemName = itemPart.trim().toLowerCase();
+            String itemName = itemPart.trim();
 
-            Integer itemId = raidItemIds.get(itemName);
+            Integer itemId = raidItemIds.get(itemName.toLowerCase());
             if (itemId != null)
             {
                 // Looked up now rather than cached, so the price is always current
@@ -454,9 +462,14 @@ public class GuildSpamFilterPlugin extends Plugin
                 if (gpValue < config.raidLootGpThreshold() ||
                         gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
                 {
-                    log.debug("Raid loot was below threshold: " + gpValue + " removing it..");
+                    log.debug("Hiding raid loot {} worth {} gp (Raid Loot GP Threshold: {})",
+                            itemName, gpValue, config.raidLootGpThreshold());
                     return true;
                 }
+            }
+            else
+            {
+                log.debug("Showing raid loot {}, since it isn't on the collection log's Raids tab", itemName);
             }
         }
 
@@ -467,7 +480,6 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterRegularDrops() && message.contains("received a drop"))
         {
-            log.debug("New drop detected..");
             int index = message.lastIndexOf("(");
             int index2 = message.lastIndexOf(")");
 
@@ -481,13 +493,13 @@ public class GuildSpamFilterPlugin extends Plugin
                 if (gpValue < config.lootGpThreshold() ||
                         gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
                 {
-                    log.debug("Loot was below threshold: " + gpValue + " removing it..");
+                    log.debug("Hiding drop worth {} gp (Loot GP Threshold: {})", gpValue, config.lootGpThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("Loot detected removing it..");
+                log.debug("Hiding drop without a value");
                 return true;
             }
         }
@@ -500,7 +512,7 @@ public class GuildSpamFilterPlugin extends Plugin
         if (config.filterPets() &&
                 (message.contains("has a funny feeling") || message.contains("acquired something special") || message.contains("something weird sneaking into")))
         {
-            log.debug("New pet detected removing it..");
+            log.debug("Hiding pet broadcast");
             return true;
         }
 
@@ -511,7 +523,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterMaxTotal() && message.contains("has reached the highest possible total level of"))
         {
-            log.debug("New max total detected removing it..");
+            log.debug("Hiding max total level broadcast");
             return true;
         }
 
@@ -522,7 +534,6 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterTotalLevelMilestone() && message.contains("has reached a total"))
         {
-            log.debug("New total level detected removing it..");
             String textToFind = "total level of ";
             int index = message.indexOf(textToFind);
 
@@ -532,13 +543,13 @@ public class GuildSpamFilterPlugin extends Plugin
                 long totalLevel = Long.parseLong(part);
                 if (totalLevel < config.totalLevelThreshold())
                 {
-                    log.debug("Total level was below threshold: " + totalLevel + " removing it..");
+                    log.debug("Hiding total level {} (Total Level Threshold: {})", totalLevel, config.totalLevelThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("Total level detected removing it..");
+                log.debug("Hiding total level milestone without a level");
                 return true;
             }
         }
@@ -550,7 +561,6 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterXpMilestone() && message.contains("has reached") && message.contains("XP in"))
         {
-            log.debug("New XP milestone detected..");
             int index = message.indexOf("reached");
             int index2 = message.indexOf("XP in");
 
@@ -561,13 +571,13 @@ public class GuildSpamFilterPlugin extends Plugin
                 long xp = Long.parseLong(part);
                 if (xp < config.xpMilestoneThreshold())
                 {
-                    log.debug("XP milestone was below threshold: " + xp + " removing it..");
+                    log.debug("Hiding XP milestone of {} XP (XP Milestone Threshold: {})", xp, config.xpMilestoneThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("XP milestone detected removing it..");
+                log.debug("Hiding XP milestone without an amount");
                 return true;
             }
         }
@@ -582,7 +592,6 @@ public class GuildSpamFilterPlugin extends Plugin
                 message.contains("level") &&
                 !message.contains("combat level"))
         {
-            log.debug("New level up detected..");
             // Reads the level from both "Fishing level 90." and "a total level of 2,000."
             String textToFind = "level ";
             int index = message.lastIndexOf(textToFind);
@@ -595,13 +604,13 @@ public class GuildSpamFilterPlugin extends Plugin
                 long level = Long.parseLong(part);
                 if (level < config.levelThreshold())
                 {
-                    log.debug("Level was below threshold: " + level + " removing it..");
+                    log.debug("Hiding level up to level {} (Level Threshold: {})", level, config.levelThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("Level detected removing it..");
+                log.debug("Hiding level up without a level");
                 return true;
             }
         }
@@ -629,7 +638,8 @@ public class GuildSpamFilterPlugin extends Plugin
 
                 if (config.enableCollectionLogThreshold() && config.collectionLogThreshold() > collectionLogCount)
                 {
-                    log.debug("Collection log count was below threshold: " + collectionLogCount + " removing it..");
+                    log.debug("Hiding collection log item from a player with {} slots (Collection Log Threshold: {})",
+                            collectionLogCount, config.collectionLogThreshold());
                     return true;
                 }
                 else
@@ -639,7 +649,7 @@ public class GuildSpamFilterPlugin extends Plugin
             }
             else
             {
-                log.debug("New collection log item detected removing it..");
+                log.debug("Hiding collection log item without a slot count");
                 return true;
             }
         }
@@ -652,45 +662,45 @@ public class GuildSpamFilterPlugin extends Plugin
         int index = message.indexOf(":") + 1;
         int index2 = message.lastIndexOf("(");
         String itemName = message.substring(index, index2)
-                                 .trim()
-                                 .toLowerCase();
+                                 .trim();
+        String lowercaseItemName = itemName.toLowerCase();
 
         for (CollectionLogTab tab : collectionLogTabs)
         {
             switch (tab.name)
             {
                 case CollectionLogTab.BOSSES:
-                    if (config.filterCollectionLogBosses() && tab.lowercaseItemNames.contains(itemName))
+                    if (config.filterCollectionLogBosses() && tab.lowercaseItemNames.contains(lowercaseItemName))
                     {
-                        log.debug("New collection log item detected removing it..");
+                        log.debug("Hiding collection log item {} from the {} tab", itemName, tab.name);
                         return true;
                     }
                     break;
                 case CollectionLogTab.RAIDS:
-                    if (config.filterCollectionLogRaids() && tab.lowercaseItemNames.contains(itemName))
+                    if (config.filterCollectionLogRaids() && tab.lowercaseItemNames.contains(lowercaseItemName))
                     {
-                        log.debug("New collection log item detected removing it..");
+                        log.debug("Hiding collection log item {} from the {} tab", itemName, tab.name);
                         return true;
                     }
                     break;
                 case CollectionLogTab.CLUES:
-                    if (config.filterCollectionLogClues() && tab.lowercaseItemNames.contains(itemName))
+                    if (config.filterCollectionLogClues() && tab.lowercaseItemNames.contains(lowercaseItemName))
                     {
-                        log.debug("New collection log item detected removing it..");
+                        log.debug("Hiding collection log item {} from the {} tab", itemName, tab.name);
                         return true;
                     }
                     break;
                 case CollectionLogTab.MINIGAMES:
-                    if (config.filterCollectionLogMinigames() && tab.lowercaseItemNames.contains(itemName))
+                    if (config.filterCollectionLogMinigames() && tab.lowercaseItemNames.contains(lowercaseItemName))
                     {
-                        log.debug("New collection log item detected removing it..");
+                        log.debug("Hiding collection log item {} from the {} tab", itemName, tab.name);
                         return true;
                     }
                     break;
                 case CollectionLogTab.OTHER:
-                    if (config.filterCollectionLogOther() && tab.lowercaseItemNames.contains(itemName))
+                    if (config.filterCollectionLogOther() && tab.lowercaseItemNames.contains(lowercaseItemName))
                     {
-                        log.debug("New collection log item detected removing it..");
+                        log.debug("Hiding collection log item {} from the {} tab", itemName, tab.name);
                         return true;
                     }
                     break;
@@ -704,7 +714,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterNewClanMember() && message.contains("has been invited into the"))
         {
-            log.debug("New clan member detected removing it..");
+            log.debug("Hiding new clan member broadcast");
             return true;
         }
 
@@ -715,7 +725,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterDefaultMessage() && message.contains("start each line of chat"))
         {
-            log.debug("New default message detected removing it..");
+            log.debug("Hiding clan login message");
             return true;
         }
 
@@ -726,7 +736,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterRareDrops() && message.contains("received a rare drop"))
         {
-            log.debug("New rare drop detected removing it..");
+            log.debug("Hiding rare drop broadcast");
             return true;
         }
 
@@ -737,7 +747,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterQuestComplete() && message.contains("has completed a quest"))
         {
-            log.debug("New quest completion detected removing it..");
+            log.debug("Hiding quest completion broadcast");
             return true;
         }
 
@@ -748,7 +758,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterHardcoreDeath() && message.contains("and lost their hardcore"))
         {
-            log.debug("New hardcore death detected removing it..");
+            log.debug("Hiding hardcore death broadcast");
             return true;
         }
 
@@ -759,7 +769,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterClanMemberKicked() && message.contains("has expelled"))
         {
-            log.debug("New kicked clan member detected removing it..");
+            log.debug("Hiding kicked clan member broadcast");
             return true;
         }
 
@@ -779,13 +789,14 @@ public class GuildSpamFilterPlugin extends Plugin
                 int value = Integer.parseInt(part);
                 if (value < config.playerDiedThreshold())
                 {
-                    log.debug("New player has been defeated by another player detected removing it..");
+                    log.debug("Hiding player death that lost {} gp (Player Death Threshold: {})",
+                            value, config.playerDiedThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("New player has been defeated by another player detected removing it..");
+                log.debug("Hiding player death without a value");
                 return true;
             }
         }
@@ -806,13 +817,14 @@ public class GuildSpamFilterPlugin extends Plugin
                 int value = Integer.parseInt(part);
                 if (value < config.playerKillThreshold())
                 {
-                    log.debug("New player kill detected removing it..");
+                    log.debug("Hiding player kill that gained {} gp (Player Kill Threshold: {})",
+                            value, config.playerKillThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("New player kill detected removing it..");
+                log.debug("Hiding player kill without a value");
                 return true;
             }
         }
@@ -830,7 +842,7 @@ public class GuildSpamFilterPlugin extends Plugin
             {
                 if (config.combatLevelUpThreshold() > 126)
                 {
-                    log.debug("New max combat level up message detected removing it..");
+                    log.debug("Hiding max combat broadcast (Combat Level Up Threshold: {})", config.combatLevelUpThreshold());
                     return true;
                 }
             }
@@ -844,13 +856,14 @@ public class GuildSpamFilterPlugin extends Plugin
                     int combatLevel = Integer.parseInt(combatLevelText);
                     if (config.combatLevelUpThreshold() > combatLevel)
                     {
-                        log.debug("New combat level up message detected removing it..");
+                        log.debug("Hiding combat level up to {} (Combat Level Up Threshold: {})",
+                                combatLevel, config.combatLevelUpThreshold());
                         return true;
                     }
                 }
                 else
                 {
-                    log.debug("New combat level up message detected removing it..");
+                    log.debug("Hiding combat level up without a level");
                     return true;
                 }
             }
@@ -864,7 +877,6 @@ public class GuildSpamFilterPlugin extends Plugin
         if ((config.filterCombatAchievementTiers() && message.contains("Combat Achievement")) ||
                 (config.filterCombatAchievementTasks() && message.contains("combat task")))
         {
-            log.debug("New Combat Achievement detected..");
             return processCombatAchievementFiltering(message);
         }
 
@@ -906,17 +918,13 @@ public class GuildSpamFilterPlugin extends Plugin
                 int tierId = getCombatAchievementTierId(tier);
                 if (tierId == -1 || threshold.getId() > tierId)
                 {
-                    log.debug("Combat Achievement threshold was set to: " +
-                            threshold +
-                            " and the incoming Combat Achievement was: " +
-                            tier +
-                            " removing it..");
+                    log.debug("Hiding {} Combat Achievement (Combat Achievement Threshold: {})", tier, threshold);
                     return true;
                 }
             }
             else
             {
-                log.debug("Combat Achievement detected removing it..");
+                log.debug("Hiding Combat Achievement without a tier");
                 return true;
             }
         }
@@ -947,7 +955,6 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterAchievementDiaries() && message.contains(" diary"))
         {
-            log.debug("New achievement diary detected..");
             String textToFind = "completed the";
             int index = message.indexOf(textToFind);
             if (index != -1)
@@ -961,17 +968,13 @@ public class GuildSpamFilterPlugin extends Plugin
                     int tierId = getAchievementDiaryTierId(tier);
                     if (tierId == -1 || threshold.getId() > tierId)
                     {
-                        log.debug("Achievement diary threshold was set to: " +
-                                threshold +
-                                " and the incoming achievement diary was: " +
-                                tier +
-                                " removing it..");
+                        log.debug("Hiding {} achievement diary (Achievement Diary Threshold: {})", tier, threshold);
                         return true;
                     }
                 }
                 else
                 {
-                    log.debug("Achievement Diary detected removing it..");
+                    log.debug("Hiding achievement diary without a tier");
                     return true;
                 }
             }
@@ -1003,13 +1006,12 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (customFilters.size() > 0)
         {
-            log.debug("Custom filter was not empty scanning..");
             String lowercaseMessage = message.toLowerCase();
             for (String text : customFilters)
             {
                 if (lowercaseMessage.contains(text))
                 {
-                    log.debug("Custom filter match found removing it..");
+                    log.debug("Hiding broadcast matching custom filter \"{}\"", text);
                     return true;
                 }
             }

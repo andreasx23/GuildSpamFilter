@@ -1,7 +1,10 @@
 package com.GuildSpamFilter.Models;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 public class CollectionLogTab
 {
@@ -11,6 +14,8 @@ public class CollectionLogTab
     public static final String CLUES = "Clues";
     public static final String MINIGAMES = "Minigames";
     public static final String OTHER = "Other";
+    public static final List<String> KNOWN_NAMES =
+            Collections.unmodifiableList(Arrays.asList(BOSSES, RAIDS, CLUES, MINIGAMES, OTHER));
 
     public String name;
     public ArrayList<CollectionLogPage> pages = new ArrayList<>();
