@@ -252,24 +252,29 @@ public class GuildSpamFilterPlugin extends Plugin
             return;
         }
 
-        // These are the settings' keyNames, which aren't always the same as their method names
-        if (event.getKey()
-                 .equals("pbsToIncludeOrExclude"))
+        // Settings change on the Swing thread, but broadcasts are filtered on the client thread,
+        // so the lists are updated there too, where nothing can be reading them halfway through
+        clientThread.invoke(() ->
         {
-            updatePersonalBestsToIncludeOrExclude();
-        }
-        else if (event.getKey()
-                      .equals("customFilters"))
-        {
-            updateCustomFilters();
-        }
-        else if (event.getKey()
-                      .equals("excludedPlayerNames"))
-        {
-            updateAlwaysIncludedPlayerNames();
-        }
+            // These are the settings' keyNames, which aren't always the same as their method names
+            if (event.getKey()
+                     .equals("pbsToIncludeOrExclude"))
+            {
+                updatePersonalBestsToIncludeOrExclude();
+            }
+            else if (event.getKey()
+                          .equals("customFilters"))
+            {
+                updateCustomFilters();
+            }
+            else if (event.getKey()
+                          .equals("excludedPlayerNames"))
+            {
+                updateAlwaysIncludedPlayerNames();
+            }
 
-        clientThread.invoke(client::refreshChat);
+            client.refreshChat();
+        });
     }
 
     @Subscribe
@@ -302,8 +307,20 @@ public class GuildSpamFilterPlugin extends Plugin
         String message = ((String)messageAsObject).trim();
         log.debug("Checking broadcast: {}", message);
 
-        // Check if message should be filtered and update stack accordingly
-        if (shouldFilterMessage(message))
+        boolean hide;
+        try
+        {
+            hide = shouldFilterMessage(message);
+        }
+        catch (RuntimeException e)
+        {
+            // Show a broadcast we can't read, and say which one, instead of letting RuneLite log a full stack trace
+            // for it on every chat refresh
+            log.warn("Couldn't check broadcast \"{}\", so it's shown: {}", message, e.toString());
+            hide = false;
+        }
+
+        if (hide)
         {
             intStack[intStackSize - 3] = 0;
         }
@@ -448,11 +465,19 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
         {
-            int startIndex = message.lastIndexOf(":");
-            String itemStartPart = message.substring(startIndex);
-            int endIndex = itemStartPart.lastIndexOf("(");
-            String itemPart = itemStartPart.substring(1, endIndex);
+            // "...from a raid: Twisted bow (1,500,000,000 coins)." The coin value hasn't always been included
+            String itemPart = message.substring(message.lastIndexOf(":") + 1);
+            int valueIndex = itemPart.lastIndexOf("(");
+            if (valueIndex != -1 && itemPart.substring(valueIndex).contains("coins"))
+            {
+                itemPart = itemPart.substring(0, valueIndex);
+            }
+
             String itemName = itemPart.trim();
+            if (itemName.endsWith("."))
+            {
+                itemName = itemName.substring(0, itemName.length() - 1).trim();
+            }
 
             Integer itemId = raidItemIds.get(itemName.toLowerCase());
             if (itemId != null)
@@ -482,14 +507,10 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             int index = message.lastIndexOf("(");
             int index2 = message.lastIndexOf(")");
+            long gpValue = index != -1 && index2 > index ? readNumber(message.substring(index + 1, index2)) : -1;
 
-            if (index != -1 && index2 != -1)
+            if (gpValue != -1)
             {
-                String part = message.substring(index + 1, index2)
-                                     .replace(",", "")
-                                     .replace("coins", "")
-                                     .trim();
-                long gpValue = Long.parseLong(part);
                 if (gpValue < config.lootGpThreshold() ||
                         gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
                 {
@@ -536,11 +557,10 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             String textToFind = "total level of ";
             int index = message.indexOf(textToFind);
+            long totalLevel = index != -1 ? readNumber(message.substring(index + textToFind.length())) : -1;
 
-            if (index != -1)
+            if (totalLevel != -1)
             {
-                String part = message.substring(index + textToFind.length(), message.length() - 1);
-                long totalLevel = Long.parseLong(part);
                 if (totalLevel < config.totalLevelThreshold())
                 {
                     log.debug("Hiding total level {} (Total Level Threshold: {})", totalLevel, config.totalLevelThreshold());
@@ -561,14 +581,13 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterXpMilestone() && message.contains("has reached") && message.contains("XP in"))
         {
-            int index = message.indexOf("reached");
+            String textToFind = "reached";
+            int index = message.indexOf(textToFind);
             int index2 = message.indexOf("XP in");
+            long xp = index != -1 && index2 > index ? readNumber(message.substring(index + textToFind.length(), index2)) : -1;
 
-            if (index != -1 && index2 != -1)
+            if (xp != -1)
             {
-                String part = message.substring(index + 8, index2 - 1)
-                                     .replace(",", "");
-                long xp = Long.parseLong(part);
                 if (xp < config.xpMilestoneThreshold())
                 {
                     log.debug("Hiding XP milestone of {} XP (XP Milestone Threshold: {})", xp, config.xpMilestoneThreshold());
@@ -595,13 +614,10 @@ public class GuildSpamFilterPlugin extends Plugin
             // Reads the level from both "Fishing level 90." and "a total level of 2,000."
             String textToFind = "level ";
             int index = message.lastIndexOf(textToFind);
-            String part = index != -1
-                    ? message.substring(index + textToFind.length()).replaceAll("[^0-9]", "")
-                    : "";
+            long level = index != -1 ? readNumber(message.substring(index + textToFind.length())) : -1;
 
-            if (!part.isEmpty())
+            if (level != -1)
             {
-                long level = Long.parseLong(part);
                 if (level < config.levelThreshold())
                 {
                     log.debug("Hiding level up to level {} (Level Threshold: {})", level, config.levelThreshold());
@@ -629,13 +645,10 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             int index = message.lastIndexOf("(");
             int index2 = message.lastIndexOf("/");
+            long collectionLogCount = index != -1 && index2 > index ? readNumber(message.substring(index + 1, index2)) : -1;
 
-            if (index != -1 && index2 != -1)
+            if (collectionLogCount != -1)
             {
-                String part = message.substring(index + 1, index2)
-                                     .trim();
-                int collectionLogCount = Integer.parseInt(part);
-
                 if (config.enableCollectionLogThreshold() && config.collectionLogThreshold() > collectionLogCount)
                 {
                     log.debug("Hiding collection log item from a player with {} slots (Collection Log Threshold: {})",
@@ -782,11 +795,10 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             int left = message.indexOf("(");
             int right = message.indexOf(")");
-            if (left != -1 && right != -1)
+            long value = left != -1 && right > left ? readNumber(message.substring(left + 1, right)) : -1;
+
+            if (value != -1)
             {
-                String part = message.substring(left + 1, right - 6)
-                                     .replace(",", "");
-                int value = Integer.parseInt(part);
                 if (value < config.playerDiedThreshold())
                 {
                     log.debug("Hiding player death that lost {} gp (Player Death Threshold: {})",
@@ -810,11 +822,10 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             int left = message.indexOf("(");
             int right = message.indexOf(")");
-            if (left != -1 && right != -1)
+            long value = left != -1 && right > left ? readNumber(message.substring(left + 1, right)) : -1;
+
+            if (value != -1)
             {
-                String part = message.substring(left + 1, right - 6)
-                                     .replace(",", "");
-                int value = Integer.parseInt(part);
                 if (value < config.playerKillThreshold())
                 {
                     log.debug("Hiding player kill that gained {} gp (Player Kill Threshold: {})",
@@ -848,12 +859,12 @@ public class GuildSpamFilterPlugin extends Plugin
             }
             else
             {
-                int index = message.indexOf("combat level");
-                if (index != -1)
+                String textToFind = "combat level";
+                int index = message.indexOf(textToFind);
+                long combatLevel = index != -1 ? readNumber(message.substring(index + textToFind.length())) : -1;
+
+                if (combatLevel != -1)
                 {
-                    String part = message.substring(index + 13);
-                    String combatLevelText = part.substring(0, part.length() - 1);
-                    int combatLevel = Integer.parseInt(combatLevelText);
                     if (config.combatLevelUpThreshold() > combatLevel)
                     {
                         log.debug("Hiding combat level up to {} (Combat Level Up Threshold: {})",
@@ -1000,6 +1011,18 @@ public class GuildSpamFilterPlugin extends Plugin
         }
 
         return -1;
+    }
+
+    // Reads the number in text, ignoring commas and anything else around it. Returns -1 if there's no number.
+    private static long readNumber(String text)
+    {
+        String digits = text.replaceAll("[^0-9]", "");
+        if (digits.isEmpty() || digits.length() > 18)
+        {
+            return -1;
+        }
+
+        return Long.parseLong(digits);
     }
 
     private boolean filterCustomFilters(String message)

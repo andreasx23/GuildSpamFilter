@@ -94,6 +94,16 @@ public class CollectionLogFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsARealBroadcastFromAPlayerWithOverAThousandSlots()
+    {
+        when(config.enableCollectionLogThreshold()).thenReturn(true);
+        when(config.collectionLogThreshold()).thenReturn(1200);
+
+        // Copied from an in-game screenshot: slot counts have no thousands separator
+        assertHidden("Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)");
+    }
+
+    @Test
     public void slotThresholdStillAppliesTabFiltersAboveIt()
     {
         when(config.enableCollectionLogThreshold()).thenReturn(true);

@@ -76,6 +76,16 @@ public class SkillingFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsTotalLevelsWithAThousandsSeparator()
+    {
+        when(config.filterTotalLevelMilestone()).thenReturn(true);
+        when(config.totalLevelThreshold()).thenReturn(2000);
+
+        assertHidden("Biceps Btw has reached a total level of 1,900.");
+        assertShown("Biceps Btw has reached a total level of 2,000.");
+    }
+
+    @Test
     public void hidesMaxTotalLevel()
     {
         when(config.filterMaxTotal()).thenReturn(true);

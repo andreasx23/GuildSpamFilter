@@ -1,5 +1,9 @@
 package com.GuildSpamFilter;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.google.inject.Guice;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -8,12 +12,15 @@ import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
+import org.junit.After;
 import org.junit.Before;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.BooleanSupplier;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
@@ -32,6 +39,7 @@ public abstract class FilterTestBase
     protected GuildSpamFilterConfig config;
     protected FakeCollectionLog collectionLog;
     protected GuildSpamFilterPlugin plugin;
+    private ListAppender<ILoggingEvent> pluginWarnings;
 
     @Before
     public void startPlugin() throws Exception
@@ -46,6 +54,16 @@ public abstract class FilterTestBase
         // Run client thread tasks straight away, like the client does when it's already on the client thread
         doAnswer(invocation -> ((BooleanSupplier) invocation.getArgument(0)).getAsBoolean())
                 .when(clientThread).invoke(any(BooleanSupplier.class));
+        doAnswer(invocation ->
+        {
+            ((Runnable) invocation.getArgument(0)).run();
+            return null;
+        }).when(clientThread).invoke(any(Runnable.class));
+
+        // The plugin shows broadcasts it fails to read and warns instead of throwing, so catch those warnings here
+        pluginWarnings = new ListAppender<>();
+        pluginWarnings.start();
+        pluginLogger().addAppender(pluginWarnings);
 
         collectionLog = new FakeCollectionLog()
                 .tab("Bosses").page("Abyssal Sire", "Abyssal orphan", "Abyssal whip")
@@ -70,6 +88,32 @@ public abstract class FilterTestBase
         }).injectMembers(plugin);
 
         plugin.startUp();
+    }
+
+    @After
+    public void failOnUnexpectedWarnings()
+    {
+        pluginLogger().detachAppender(pluginWarnings);
+        for (ILoggingEvent event : pluginWarnings.list)
+        {
+            if (event.getLevel().isGreaterOrEqual(Level.WARN))
+            {
+                fail("Unexpected warning: " + event.getFormattedMessage());
+            }
+        }
+    }
+
+    /** Checks the plugin warned with this text, and marks the warning as expected. */
+    protected void assertWarned(String text)
+    {
+        boolean warned = pluginWarnings.list.removeIf(event ->
+                event.getLevel() == Level.WARN && event.getFormattedMessage().contains(text));
+        assertTrue("Expected a warning containing: " + text, warned);
+    }
+
+    private static Logger pluginLogger()
+    {
+        return (Logger) LoggerFactory.getLogger(GuildSpamFilterPlugin.class);
     }
 
     protected boolean isHidden(String broadcast)

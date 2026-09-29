@@ -59,6 +59,17 @@ public class PvmFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsRaidLootWithoutACoinValue()
+    {
+        // Raid broadcasts haven't always included the coin value
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(2_000_000_000);
+
+        assertHidden("Biceps Btw received special loot from a raid: Twisted bow.");
+        assertHidden("Biceps Btw received special loot from a raid: Scythe of vitur (uncharged).");
+    }
+
+    @Test
     public void coversEveryItemOnTheCollectionLogRaidsTab()
     {
         when(config.filterRaidDrop()).thenReturn(true);
@@ -120,6 +131,15 @@ public class PvmFiltersTest extends FilterTestBase
 
         when(config.lootGpThreshold()).thenReturn(2_000_000);
         assertHidden(onyxBolts);
+    }
+
+    @Test
+    public void hidesDropsWithoutAValue()
+    {
+        when(config.filterRegularDrops()).thenReturn(true);
+        when(config.lootGpThreshold()).thenReturn(1_000_000);
+
+        assertHidden("Biceps Btw received a drop: Onyx bolts (e).");
     }
 
     @Test

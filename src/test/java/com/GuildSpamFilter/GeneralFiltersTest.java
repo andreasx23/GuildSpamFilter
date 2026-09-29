@@ -229,6 +229,15 @@ public class GeneralFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsCombatLevelsWithoutAFullStop()
+    {
+        when(config.filterCombatLevelUps()).thenReturn(true);
+        when(config.combatLevelUpThreshold()).thenReturn(100);
+
+        assertShown("Biceps Btw has reached combat level 100");
+    }
+
+    @Test
     public void maxCombatIsHiddenOnlyWhenTheThresholdIsAbove126()
     {
         String maxCombat = "Biceps Btw has reached the highest possible combat level of 126!";

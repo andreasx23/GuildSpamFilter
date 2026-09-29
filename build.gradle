@@ -26,8 +26,24 @@ dependencies {
 
 group = 'com.GuildSpamFilter'
 version = '1.9.4'
-sourceCompatibility = "10"
+
+// Tells IntelliJ which Java version to use; Gradle compiles with the release setting below
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
+    // Build against Java 11 like the Plugin Hub does, so newer Java APIs fail here instead of on the Hub
+    options.release.set(11)
+}
+
+tasks.register('run', JavaExec) {
+    group = 'application'
+    description = 'Starts RuneLite with this plugin, in developer mode with debug logging'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.GuildSpamFilter.GuildSpamFilterTest'
+    jvmArgs '-ea'
+    args '--developer-mode', '--debug'
 }

@@ -17,10 +17,11 @@ touched. Every filter is off by default, and threshold settings hide only broadc
 ```
 
 - On Windows from PowerShell use `.\gradlew.bat`. There is no linter or formatter.
-- To run the plugin in a real client, run `main` in `src/test/java/com/GuildSpamFilter/GuildSpamFilterTest.java`
-  from IntelliJ (it is a launcher, not a unit test). RuneLite's example plugin passes `--developer-mode --debug`;
-  with `--debug` the plugin's `log.debug` output appears, including every broadcast as `Checking broadcast: ...`,
-  which is the way to capture real broadcast wording.
+- `./gradlew run` starts RuneLite with the plugin (via `GuildSpamFilterTest.main`, a launcher, not a unit test) in
+  `--developer-mode --debug`. Debug logging shows every broadcast as `Checking broadcast: ...`, which is the way to
+  capture real broadcast wording.
+- `build.gradle` compiles with `options.release.set(11)` like the Plugin Hub, so Java 12+ APIs fail locally too. The
+  `java { sourceCompatibility }` block only tells IntelliJ which language level to use.
 - Gradle wrapper 8.10 and Lombok 1.18.30 are required on JDK 21+ (Gradle 7.4 cannot run on JDK 22, and Lombok
   older than 1.18.30 fails with `NoSuchFieldError ... JCImport qualid`).
 
@@ -34,15 +35,20 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Pipeline:** `shouldFilterMessage` strips a leading `<img=N>` and anything up to the first `|`, checks the
   always-show list first, then ORs the `filterX` methods; the first match hides the message. The Leagues filter
   looks at the raw message for `<img=22>`.
-- **Parsing:** `indexOf`/`substring`, not regex. The existing rule is: if a filter is on and the broadcast can't be
-  parsed, hide it.
+- **Parsing:** `indexOf`/`substring`, not regex. Numbers are read with `readNumber`, which ignores commas, "coins"
+  and punctuation and returns -1 instead of throwing. The rule is: if a filter is on and the broadcast can't be
+  parsed, hide it. As a safety net, `onScriptCallbackEvent` catches any exception from the filters, shows that
+  broadcast and logs one warning quoting it.
+- **Threads:** filtering runs on the client thread. `onConfigChanged` is called on the Swing thread, so it does its
+  list updates inside `clientThread.invoke`, together with the chat refresh.
 - **Always-show players** (`isBroadcastMessageForPlayer`): the game writes spaces in names as non-breaking spaces,
   so spaces in the configured name act as wildcards, and the name must end at a space character ("Bob" must not
   match "Bobby").
 - **Settings:** config group `GuildSpamFilterConfig.GROUP` (`"GuildSpamFilter"`). The comma-separated lists
   (personal bests, custom filters, always-included players) are cached in `HashSet`s and only reloaded in
-  `onConfigChanged`, which matches on the settings' `keyName`s. `onConfigChanged` ignores other plugins' groups,
-  and it, `startUp` and `shutDown` call `clientThread.invoke(client::refreshChat)` so existing chat is refiltered.
+  `onConfigChanged`, which matches on the settings' `keyName`s and ignores other plugins' groups. `startUp`,
+  `shutDown` and `onConfigChanged` all call `client.refreshChat()` on the client thread, so existing chat is
+  refiltered.
 - **Saved names never change:** users' settings are saved under the config group, each `@ConfigItem`'s `keyName`,
   and enum constant names (`ALL`, `ELITE`, `EXCLUDE_ALL_EXCEPT`). Renaming any of them silently resets that setting
   for every user. Java method and class names can be renamed freely, which is why some `keyName`s no longer match
@@ -61,9 +67,10 @@ All logic lives in `GuildSpamFilterPlugin`:
   name, `690` enum of item ids) → `client.getItemDefinition(id).getName()`. RuneLite has no named constants for these
   ids; they match the `collection-log` (evansloan) and `kill-clog` Hub plugins. Cache reads need the client thread
   and a loaded game, so `startUp` schedules `loadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
-  `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. It logs
-  `Loaded N collection log items in 5 tabs, including M raid items` (N ≈ 1,700, M ≈ 67). `CollectionLogTab.lowercaseItemNames` is lowercase, and
-  `filterCollectionLogByTab` compares lowercase item names and switches on the tab name constants in
+  `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. In the real client it logs
+  `Loaded 1721 collection log items in 5 tabs, including 67 raid items` (September 2026).
+  `CollectionLogTab.lowercaseItemNames` is lowercase, and `filterCollectionLogByTab` compares lowercase item names
+  and switches on the tab name constants in
   `CollectionLogTab` (`BOSSES`, `RAIDS`, `CLUES`, `MINIGAMES`, `OTHER`), which must match the game's tab names
   exactly. Always use the constants; test fakes deliberately spell the names out.
 
@@ -74,27 +81,32 @@ JUnit 4 + Mockito 5 (test-only). Test classes mirror the config sections (`Gener
 plus `MessageHandlingTest` and `CollectionLogHandlerTest`.
 
 - `FilterTestBase` injects mocks into the real plugin with Guice and calls `startUp()`. The config mock uses
-  `CALLS_REAL_METHODS`, so every setting has its real default until stubbed. `clientThread.invoke(BooleanSupplier)`
-  runs immediately, and `FakeCollectionLog` installs a small collection log using the real cache ids.
+  `CALLS_REAL_METHODS`, so every setting has its real default until stubbed. Both `clientThread.invoke` overloads
+  run immediately, and `FakeCollectionLog` installs a small collection log using the real cache ids.
+- Because the plugin turns filter crashes into warnings, `FilterTestBase` fails any test that logs an unexpected
+  warning. A test that expects one calls `assertWarned(text)`.
 - `isHidden(message)` simulates the `chatFilterCheck` stacks. For the list settings use `setCustomFilters`,
   `setAlwaysIncludedPlayers` or `setPersonalBestList`: they fire `ConfigChanged`, because stubbing the getter alone
   doesn't update the cached sets.
-- Exceptions propagate in tests. In the real client the EventBus logs them and the message stays shown, so a crash
-  in a filter looks like "not filtered" to players.
 
 ## Broadcast wording
 
 Filters depend on Jagex's exact wording, which changes occasionally (see git history).
 
-- **Confirmed** (also checked by the `better-clan-broadcasts` plugin): `received a drop:`,
-  `received special loot from a raid:` (now ends with `(N coins)`), `has completed a quest:`,
-  `received a new collection log item:`, `personal best:`, `has defeated` / `has been defeated by`,
-  `has a funny feeling like`, `has been invited into the clan by`, `has completed the <Tier> <Area> diary.`,
-  `tier of rewards from Combat Achievements!`, `has completed a(n) <Tier> combat task`,
+- **Seen in in-game screenshots** (RuneLite's screenshot plugin saves them under
+  `~/.runelite/screenshots/<player>/`, chat box included):
+  `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`,
+  `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
+  the slot count, no full stop), and
+  `Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!`
+- **Also checked by the `better-clan-broadcasts` plugin:** `received special loot from a raid:` (currently ends
+  with `(N coins)`, which it hasn't always), `has completed a quest:`, `personal best:`, `has defeated` /
+  `has been defeated by`, `has a funny feeling like`, `has been invited into the clan by`,
+  `has completed the <Tier> <Area> diary.`, `has completed a(n) <Tier> combat task`,
   `To talk in your clan's channel, start each line of chat with // or /c.`
 - **Not verified against a real broadcast:** skill level-ups (tests use `has reached Fishing level 90.`; the parser
-  also accepts `level of 90`), the words before `the <Tier> tier of rewards`, hardcore deaths, kicked members, rare
-  drops, the PvP `(N coins)` format, and whether collection log counts of 1,000+ contain commas.
+  also accepts `level of 90`), hardcore deaths, kicked members, rare drops, the PvP `(N coins)` format, and
+  whether total levels contain a thousands separator (the parser accepts both).
 
 ## Plugin Hub and releases
 
@@ -105,8 +117,6 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
 - The Hub rebuilds every plugin for each RuneLite release. If this plugin fails to compile, it silently stops being
   served for that client version. To diagnose, check `~/.runelite/logs/client.log` for a missing
   `Loading external plugin "guild-spam-filter"` line, then build against `latest.release`.
-- To check Hub compatibility locally, compile on JDK 11 (`JAVA_HOME` pointed at a JDK 11) with
-  `./gradlew clean compileJava`.
 - **Release steps:**
   1. Bump `version` in `build.gradle`.
   2. Merge into `master` through a pull request (`master` has a branch protection rule requiring PRs).
@@ -124,6 +134,6 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
   was shown, so don't add "detected" lines.
 - Spell names out instead of abbreviating (`personalBest`, not `pb`; `ChambersOfXeric`, not `Cox`). The exceptions
   are the game terms the settings panel itself uses: XP, GP, PvM and PvP.
-- `.idea/` is tracked. IntelliJ rewrites `.idea/compiler.xml` (the Lombok processor path) after Gradle dependency
-  changes; commit that alongside the change that caused it.
+- `.idea/` is tracked. IntelliJ rewrites `.idea/compiler.xml` and `.idea/misc.xml` (Lombok processor path, Java
+  language level) when it reloads the Gradle project; commit those alongside the change that caused them.
 - Git runs with `core.autocrlf`, so "LF will be replaced by CRLF" warnings are expected.

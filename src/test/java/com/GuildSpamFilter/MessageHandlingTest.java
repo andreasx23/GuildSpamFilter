@@ -8,12 +8,15 @@ import org.mockito.ArgumentCaptor;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class MessageHandlingTest extends FilterTestBase
 {
+    private static final String WHIP_DROP = "Biceps Btw received a drop: Abyssal whip (1,500,000 coins).";
+
     private static final String[] ONE_OF_EACH_BROADCAST = {
             "Biceps Btw has achieved a new Vorkath personal best: 1:05.40",
             "Biceps Btw has a funny feeling like they're being followed: Vorki at 50 killcount.",
@@ -69,47 +72,70 @@ public class MessageHandlingTest extends FilterTestBase
     @Test
     public void startingThePluginRefiltersChat()
     {
-        assertChatWasRefiltered();
+        assertChatWasRefilteredOnTheClientThread();
     }
 
     @Test
     public void stoppingThePluginRefiltersChat()
     {
-        clearInvocations(clientThread);
+        clearInvocations(clientThread, client);
 
         plugin.shutDown();
 
-        assertChatWasRefiltered();
+        assertChatWasRefilteredOnTheClientThread();
     }
 
     @Test
     public void changingASettingRefiltersChat()
     {
-        clearInvocations(clientThread);
+        clearInvocations(clientThread, client);
 
         changeSetting("filterPets");
 
-        assertChatWasRefiltered();
+        assertChatWasRefilteredOnTheClientThread();
     }
 
     @Test
     public void ignoresSettingsChangedByOtherPlugins()
     {
-        clearInvocations(clientThread);
+        clearInvocations(clientThread, client);
         when(config.customFilters()).thenReturn("whip");
 
         changeSetting("someotherplugin", "customFilters");
 
         verify(clientThread, never()).invoke(any(Runnable.class));
-        assertShown("Biceps Btw received a drop: Abyssal whip (1,500,000 coins).");
+        verify(client, never()).refreshChat();
+        assertShown(WHIP_DROP);
     }
 
-    private void assertChatWasRefiltered()
+    @Test
+    public void updatesSettingListsOnTheClientThread()
     {
-        ArgumentCaptor<Runnable> task = ArgumentCaptor.forClass(Runnable.class);
-        verify(clientThread).invoke(task.capture());
+        // Hold back client thread work to see what happens before it runs
+        doNothing().when(clientThread).invoke(any(Runnable.class));
+        clearInvocations(clientThread);
 
-        task.getValue().run();
+        setCustomFilters("whip");
+        assertShown(WHIP_DROP);
+
+        ArgumentCaptor<Runnable> clientThreadTask = ArgumentCaptor.forClass(Runnable.class);
+        verify(clientThread).invoke(clientThreadTask.capture());
+        clientThreadTask.getValue().run();
+        assertHidden(WHIP_DROP);
+    }
+
+    @Test
+    public void showsBroadcastsItCannotReadAndWarns()
+    {
+        when(config.filterPets()).thenThrow(new IllegalStateException("unexpected broadcast"));
+
+        assertShown(WHIP_DROP);
+        assertWarned("Couldn't check broadcast \"" + WHIP_DROP + "\"");
+    }
+
+    private void assertChatWasRefilteredOnTheClientThread()
+    {
+        verify(clientThread).invoke(any(Runnable.class));
         verify(client).refreshChat();
     }
 }
