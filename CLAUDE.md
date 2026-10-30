@@ -107,25 +107,46 @@ plus `MessageHandlingTest` and `CollectionLogHandlerTest`.
 
 Filters depend on Jagex's exact wording, which changes occasionally (see git history).
 
-- **Seen in in-game screenshots** (RuneLite's screenshot plugin saves them under
-  `~/.runelite/screenshots/<player>/`, chat box included):
-  `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`,
-  `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
-  the slot count, no full stop),
-  `Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!`,
-  `Smallman26 received special loot from a raid: Cabbage.` (no coin value),
-  `200iq p2W received special loot from a raid: 884 x Iron ore (very valuable).` (a quantity, and "very valuable"
-  instead of the coin value; for a week in October 2026 every Fractured Archive drop was broadcast like this),
+RuneLite's screenshot plugin saves screenshots under `~/.runelite/screenshots/<player>/`, chat box included, so
+real clan broadcasts can be read from them. Tests use these real lines (with the date seen) wherever one exists.
+
+- **Drops and raid loot:**
+  - `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`
+  - `Biceps Btw received a rare drop: Magma mutagen` (no full stop; only seen in 2022)
+  - `Corydonn received special loot from a raid: Kodai insignia (47,809,774 coins).`
+  - `Biceps Btw received special loot from a raid: Archivist's folio (inert).` (no value)
+  - `Uganda Ulrik received special loot from a raid: Fragment of whispering wind.` (untradeable, no value)
+  - `Smallman26 received special loot from a raid: Cabbage.`
+  - `Voliz received special loot from a raid: 77 x Ascension shards (very valuable).` (a quantity, and "very
+    valuable" instead of a value; for a week in October 2026 every Fractured Archive drop was broadcast like this)
+- **Skilling:** `Csurma has reached Agility level 99.` (the `level of 90` form is never used for skills),
+  `Radmer has reached a total level of 2000.` (no thousands separator; milestones start at 100),
+  `Biceps Btw has reached the highest possible total level of 2376!`,
+  `Snorhax has reached 95,000,000 XP in Firemaking.`
+- **Combat:** `snolpiksvin has reached combat level 100.`,
+  `Nuclear Pimp has reached the highest possible combat level of 126!`,
+  `Biceps Btw has completed a grandmaster combat task: Whispered.` (lowercase tier),
+  `Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!`
+- **PvP:** `Crunch704 has defeated dahlinho and received (27,735,720 coins) worth of loot!`,
+  `CyborgC7pher has been defeated by tom is bald in The Wilderness and lost (316,298 coins) worth of loot.`, and
+  without loot `Latryy has been defeated by Iron TimPvm in The Wilderness. Clearly Latryy struggles with clicking.`
+- **Personal bests:**
   `Smallman26 has achieved a new The Fractured Archive (team size: 3) Normal mode Overall personal best: 30:28.20`,
-  and `Uganda Ulrik received special loot from a raid: Fragment of whispering wind.` (untradeable, no coin value)
-- **Also checked by the `better-clan-broadcasts` plugin:** `received special loot from a raid:` (currently ends
-  with `(N coins)`, which it hasn't always), `has completed a quest:`, `personal best:`, `has defeated` /
-  `has been defeated by`, `has a funny feeling like`, `has been invited into the clan by`,
-  `has completed the <Tier> <Area> diary.`, `has completed a(n) <Tier> combat task`,
+  and without "has" or a full stop:
+  `Kroghs achieved a new personal best deep delve at the Doom of Mokhaiotl: Level 28`
+- **Clan and other:** `MindMySnipe has expelled SuckUduck from the clan.` (never "kicked"),
+  `Biceps Btw has died and lost their hardcore ironman status.`,
+  `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
+  the slot count, no full stop)
+- **Not filtered by anything** (only custom filters catch them): `CasperWolffU has left the clan.`,
+  `Tuborg x has earned the Adamant rank!`, `Biceps Btw received a clue item: Flared trousers (3,176,869 coins).`,
+  `Biceps Btw received an item: Ancient blood ornament kit`, and Leagues broadcasts without the `<img=22>` icon,
+  if any (`Jern Lem has unlocked their tier 7 League relic!`).
+- **Also checked by the `better-clan-broadcasts` plugin:** `has completed a quest:`, `has a funny feeling like`,
+  `has been invited into the clan by`, `has completed the <Tier> <Area> diary.`,
   `To talk in your clan's channel, start each line of chat with // or /c.`
-- **Not verified against a real broadcast:** skill level-ups (tests use `has reached Fishing level 90.`; the parser
-  also accepts `level of 90`), hardcore deaths, kicked members, rare drops, the PvP `(N coins)` format, and
-  whether total levels contain a thousands separator (the parser accepts both).
+- **Not verified against a real broadcast:** pets, quest completions, achievement diaries and new members (tests
+  use the wording above), and a rare drop newer than 2022.
 
 ## Plugin Hub and releases
 

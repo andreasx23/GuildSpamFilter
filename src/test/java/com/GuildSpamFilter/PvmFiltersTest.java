@@ -140,12 +140,23 @@ public class PvmFiltersTest extends FilterTestBase
     @Test
     public void multipliesThePriceByTheQuantity()
     {
-        // Seen in an in-game screenshot, October 2026: "...from a raid: 884 x Iron ore (very valuable)."
         when(config.filterRaidDrop()).thenReturn(true);
         when(config.raidLootGpThreshold()).thenReturn(5_000_000);
 
         assertShown("Biceps Btw received special loot from a raid: 1,000 x Ascension shards (very valuable).");
-        assertHidden("Biceps Btw received special loot from a raid: 400 x Ascension shards (very valuable).");
+        // Seen in an in-game screenshot, October 2026
+        assertHidden("Voliz received special loot from a raid: 77 x Ascension shards (very valuable).");
+    }
+
+    @Test
+    public void keepsBracketsThatArePartOfARaidItemName()
+    {
+        setPrice("Archivist's folio (inert)", 50_000_000L);
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(10_000_000);
+
+        // Seen in an in-game screenshot, October 2026: a unique with no value after the name
+        assertShown("Biceps Btw received special loot from a raid: Archivist's folio (inert).");
     }
 
     @Test
@@ -374,6 +385,7 @@ public class PvmFiltersTest extends FilterTestBase
     {
         when(config.filterRareDrops()).thenReturn(true);
 
-        assertHidden("Biceps Btw received a rare drop: Dragon warhammer.");
+        // Seen in an in-game screenshot, October 2022: no full stop
+        assertHidden("Biceps Btw received a rare drop: Magma mutagen");
     }
 }

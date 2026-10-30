@@ -54,7 +54,7 @@ import java.util.regex.PatternSyntaxException;
                 "Chat cleanup",
                 "Broadcast blocker"
         },
-        description = "Clan chat filter to hide unwanted broadcasts and reduce chat clutter. Customize which messages to show or hide including: drops (with GP thresholds), personal bests, pets, level ups, XP milestones, collection log items, achievement diaries, Combat Achievements, raid loot, quest completions, and more. Features always-included players, custom filters, and granular threshold controls for a cleaner clan chat experience."
+        description = "Clan chat filter to hide unwanted broadcasts and reduce chat clutter. Customize which messages to show or hide including: drops (with GP thresholds), personal bests, pets, level ups, XP milestones, collection log items, achievement diaries, Combat Achievements, raid loot, quest completions, and more. Features always-included players, custom and regex filters, and granular threshold controls for a cleaner clan chat experience."
 )
 public class GuildSpamFilterPlugin extends Plugin
 {

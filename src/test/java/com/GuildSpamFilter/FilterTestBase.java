@@ -78,7 +78,7 @@ public abstract class FilterTestBase
                 .tab("Raids")
                 .page("Chambers of Xeric", "Olmlet", "Twisted bow", "Dexterous prayer scroll", "Metamorphic dust")
                 .page("Theatre of Blood", "Scythe of vitur (uncharged)")
-                .page("The Fractured Archive", "Ascension shards", "Fragment of whispering wind")
+                .page("The Fractured Archive", "Ascension shards", "Fragment of whispering wind", "Archivist's folio (inert)")
                 .tab("Clues")
                 .page("Beginner Treasure Trails", "Mole slippers")
                 .page("Easy Treasure Trails", "Blue skirt (g)")
