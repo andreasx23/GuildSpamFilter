@@ -60,8 +60,16 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Raid loot:** `raidItemIds` maps every item on the collection log's Raids tab to its item id (built in
   `loadCollectionLog`). The value comes from `ItemManager.getItemPrice` (GE price), looked up when the broadcast
   arrives, not from the coin value in the broadcast. Don't cache prices at load time: that runs at the login screen,
-  possibly before RuneLite has fetched prices. Items not on the Raids tab are never filtered. Since RuneLite 1.13.0,
+  possibly before RuneLite has fetched prices. If the price is 0 (untradeable, or prices not fetched yet) the coin
+  value in the broadcast is used instead, and loot with neither is hidden. Items not on the Raids tab are never
+  filtered by "Filter Raid Drops". The exception is The Fractured Archive's joke `Cabbage` loot, which has its own
+  setting (`filterCabbageRaidLoot`) that works whether or not raid drops are filtered. Since RuneLite 1.13.0,
   `getItemPrice` returns `long`.
+- **Loot parsing:** raid loot and regular drops share `readLoot`, which strips an `N x ` quantity and a trailing
+  `(N coins)` or `(very valuable)`, but keeps brackets that belong to the name (`(uncharged)`, `(e)`). Regular drops
+  use the broadcast's coin value; without one they fall back to the GE price found by exact name through
+  `ItemManager.search` (tradeable items only) times the quantity, and are hidden if that fails too. A threshold at
+  `Integer.MAX_VALUE` (the default) hides everything, including values above it (`isBelowThreshold`).
 - **Collection log:** `CollectionLogHandler.readData(client)` reads the game cache, the same data the in-game
   collection log uses: enum `2102` → tab structs (param `682` name, `683` enum of pages) → page structs (param `689`
   name, `690` enum of item ids) → `client.getItemDefinition(id).getName()`. RuneLite has no named constants for these
@@ -98,7 +106,11 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
   `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`,
   `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
   the slot count, no full stop), and
-  `Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!`
+  `Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!`,
+  `Smallman26 received special loot from a raid: Cabbage.` (no coin value),
+  `200iq p2W received special loot from a raid: 884 x Iron ore (very valuable).` (a quantity, and "very valuable"
+  instead of the coin value; for a week in October 2026 every Fractured Archive drop was broadcast like this), and
+  `Smallman26 has achieved a new The Fractured Archive (team size: 3) Normal mode Overall personal best: 30:28.20`
 - **Also checked by the `better-clan-broadcasts` plugin:** `received special loot from a raid:` (currently ends
   with `(N coins)`, which it hasn't always), `has completed a quest:`, `personal best:`, `has defeated` /
   `has been defeated by`, `has a funny feeling like`, `has been invited into the clan by`,

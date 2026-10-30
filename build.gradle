@@ -25,7 +25,7 @@ dependencies {
 }
 
 group = 'com.GuildSpamFilter'
-version = '1.9.4'
+version = '1.10.0'
 
 // Tells IntelliJ which Java version to use; Gradle compiles with the release setting below
 java {

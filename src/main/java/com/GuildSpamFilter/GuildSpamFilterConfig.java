@@ -389,11 +389,23 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "filterCabbageRaidLoot",
+            name = "Filter Cabbage Raid Loot",
+            description = "Remove the joke \"special loot from a raid: Cabbage\" broadcasts from The Fractured Archive, even when Filter Raid Drops is off",
+            section = filterSectionPvm,
+            position = 2
+    )
+    default boolean filterCabbageRaidLoot()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "filterRegularDrops",
             name = "Filter Regular Drops",
             description = "Remove regular drop broadcasts from clan chat",
             section = filterSectionPvm,
-            position = 2
+            position = 3
     )
     default boolean filterRegularDrops()
     {
@@ -405,7 +417,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Loot GP Threshold",
             description = "Drops worth less than this are removed. The default removes all of them. (Default: 2,147,483,647)",
             section = filterSectionPvm,
-            position = 3
+            position = 4
     )
     default int lootGpThreshold()
     {
@@ -417,7 +429,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Rare Drops",
             description = "Remove rare drop broadcasts from clan chat",
             section = filterSectionPvm,
-            position = 4
+            position = 5
     )
     default boolean filterRareDrops()
     {

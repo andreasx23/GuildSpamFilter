@@ -19,6 +19,7 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.http.api.item.ItemPrice;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -56,6 +57,7 @@ import java.util.HashSet;
 public class GuildSpamFilterPlugin extends Plugin
 {
     private static final String EASY = "Easy";
+    private static final String RAID_LOOT_TEXT = "received special loot from a raid";
 
     @Inject
     private Client client;
@@ -343,6 +345,7 @@ public class GuildSpamFilterPlugin extends Plugin
         // Check all filter conditions
         return filterLeaguesBroadcasts(message) ||
                 filterPersonalBests(cleanedMessage) ||
+                filterCabbageRaidLoot(cleanedMessage) ||
                 filterRaidDrops(cleanedMessage) ||
                 filterRegularDrops(cleanedMessage) ||
                 filterPets(cleanedMessage) ||
@@ -461,71 +464,152 @@ public class GuildSpamFilterPlugin extends Plugin
         return false;
     }
 
+    private boolean filterCabbageRaidLoot(String message)
+    {
+        // The Fractured Archive broadcasts Cabbages as "very valuable" special loot as a joke
+        if (config.filterCabbageRaidLoot() && message.contains(RAID_LOOT_TEXT) &&
+                readLoot(message).itemName.equalsIgnoreCase("Cabbage"))
+        {
+            log.debug("Hiding Cabbage raid loot");
+            return true;
+        }
+
+        return false;
+    }
+
     private boolean filterRaidDrops(String message)
     {
-        if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
+        if (config.filterRaidDrop() && message.contains(RAID_LOOT_TEXT))
         {
-            // "...from a raid: Twisted bow (1,500,000,000 coins)." The coin value hasn't always been included
-            String itemPart = message.substring(message.lastIndexOf(":") + 1);
-            int valueIndex = itemPart.lastIndexOf("(");
-            if (valueIndex != -1 && itemPart.substring(valueIndex).contains("coins"))
-            {
-                itemPart = itemPart.substring(0, valueIndex);
-            }
-
-            String itemName = itemPart.trim();
-            if (itemName.endsWith("."))
-            {
-                itemName = itemName.substring(0, itemName.length() - 1).trim();
-            }
-
-            Integer itemId = raidItemIds.get(itemName.toLowerCase());
+            Loot loot = readLoot(message);
+            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase());
             if (itemId != null)
             {
-                // Looked up now rather than cached, so the price is always current
-                long gpValue = itemManager.getItemPrice(itemId);
-                if (gpValue < config.raidLootGpThreshold() ||
-                        gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
+                // Looked up now rather than cached, so the price is always current. Untradeable items have no
+                // Grand Exchange price, and neither has anything before RuneLite has fetched prices, so fall back
+                // to the coin value in the broadcast
+                long price = itemManager.getItemPrice(itemId);
+                long gpValue = price > 0 ? price * loot.quantity : loot.coinValue;
+
+                if (gpValue == -1)
                 {
-                    log.debug("Hiding raid loot {} worth {} gp (Raid Loot GP Threshold: {})",
-                            itemName, gpValue, config.raidLootGpThreshold());
+                    log.debug("Hiding raid loot {} without a price (Raid Loot GP Threshold: {})",
+                            loot.itemName, config.raidLootGpThreshold());
+                    return true;
+                }
+
+                if (isBelowThreshold(gpValue, config.raidLootGpThreshold()))
+                {
+                    log.debug("Hiding raid loot {} x {} worth {} gp (Raid Loot GP Threshold: {})",
+                            loot.quantity, loot.itemName, gpValue, config.raidLootGpThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("Showing raid loot {}, since it isn't on the collection log's Raids tab", itemName);
+                log.debug("Showing raid loot {}, since it isn't on the collection log's Raids tab", loot.itemName);
             }
         }
 
         return false;
     }
 
+    private static final class Loot
+    {
+        String itemName;
+        long quantity = 1;
+        // -1 if the broadcast has no coin value
+        long coinValue = -1;
+    }
+
+    // Reads raid loot and drop broadcasts. The game has used several formats:
+    // "...received a drop: Viggora's chainmace (u) (3,950,787 coins).", "...from a raid: 884 x Iron ore (very valuable)."
+    // and "...from a raid: Cabbage."
+    private static Loot readLoot(String message)
+    {
+        Loot loot = new Loot();
+        String itemPart = message.substring(message.lastIndexOf(":") + 1).trim();
+        if (itemPart.endsWith("."))
+        {
+            itemPart = itemPart.substring(0, itemPart.length() - 1).trim();
+        }
+
+        // Remove the value the game adds after the item name, but keep brackets that are part of the name,
+        // like "Scythe of vitur (uncharged)"
+        int bracketIndex = itemPart.lastIndexOf("(");
+        while (bracketIndex != -1 && itemPart.endsWith(")"))
+        {
+            String bracketPart = itemPart.substring(bracketIndex);
+            if (bracketPart.contains("coins"))
+            {
+                loot.coinValue = readNumber(bracketPart);
+            }
+            else if (!bracketPart.contains("valuable"))
+            {
+                break;
+            }
+
+            itemPart = itemPart.substring(0, bracketIndex).trim();
+            bracketIndex = itemPart.lastIndexOf("(");
+        }
+
+        int quantityIndex = itemPart.indexOf(" x ");
+        if (quantityIndex != -1 && itemPart.substring(0, quantityIndex).matches("\\d[\\d,]*"))
+        {
+            loot.quantity = readNumber(itemPart.substring(0, quantityIndex));
+            itemPart = itemPart.substring(quantityIndex + 3).trim();
+        }
+
+        loot.itemName = itemPart;
+        return loot;
+    }
+
+    // A threshold at its maximum, the default, hides everything, even values too big to type into the setting
+    private static boolean isBelowThreshold(long gpValue, int threshold)
+    {
+        return threshold == Integer.MAX_VALUE || gpValue < threshold;
+    }
+
     private boolean filterRegularDrops(String message)
     {
         if (config.filterRegularDrops() && message.contains("received a drop"))
         {
-            int index = message.lastIndexOf("(");
-            int index2 = message.lastIndexOf(")");
-            long gpValue = index != -1 && index2 > index ? readNumber(message.substring(index + 1, index2)) : -1;
+            // Drops normally include their coin value. Without one, like "(very valuable)", use the Grand Exchange price
+            Loot loot = readLoot(message);
+            long gpValue = loot.coinValue != -1 ? loot.coinValue : findGrandExchangeValue(loot);
 
             if (gpValue != -1)
             {
-                if (gpValue < config.lootGpThreshold() ||
-                        gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
+                if (isBelowThreshold(gpValue, config.lootGpThreshold()))
                 {
-                    log.debug("Hiding drop worth {} gp (Loot GP Threshold: {})", gpValue, config.lootGpThreshold());
+                    log.debug("Hiding drop {} x {} worth {} gp (Loot GP Threshold: {})",
+                            loot.quantity, loot.itemName, gpValue, config.lootGpThreshold());
                     return true;
                 }
             }
             else
             {
-                log.debug("Hiding drop without a value");
+                log.debug("Hiding drop {} without a value", loot.itemName);
                 return true;
             }
         }
 
         return false;
+    }
+
+    // Returns -1 if no tradeable item has exactly this name
+    private long findGrandExchangeValue(Loot loot)
+    {
+        for (ItemPrice item : itemManager.search(loot.itemName))
+        {
+            if (item.getName().equalsIgnoreCase(loot.itemName))
+            {
+                long price = itemManager.getItemPrice(item.getId());
+                return price > 0 ? price * loot.quantity : -1;
+            }
+        }
+
+        return -1;
     }
 
     private boolean filterPets(String message)

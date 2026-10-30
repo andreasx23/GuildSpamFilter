@@ -22,7 +22,7 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
 - **Collection log:** by collection log tab (Bosses, Raids, Clues, Minigames, Other),
   or only for players below a set number of collection log slots
 - **Skilling:** level-ups, XP milestones, total level milestones and max total
-- **PvM:** raid loot, regular drops and rare drops
+- **PvM:** raid loot, The Fractured Archive's joke Cabbage loot, regular drops and rare drops
 - **PvP:** player kills and deaths
 - **Miscellaneous:** Leagues broadcasts
 
