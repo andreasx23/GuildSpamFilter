@@ -19,12 +19,15 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.http.api.item.ItemPrice;
 
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /*
    Shout out to Spam Filter for giving me a baseline on how to implement this simple Clan (broadcast) Spam Filter
@@ -51,11 +54,13 @@ import java.util.HashSet;
                 "Chat cleanup",
                 "Broadcast blocker"
         },
-        description = "Clan chat filter to hide unwanted broadcasts and reduce chat clutter. Customize which messages to show or hide including: drops (with GP thresholds), personal bests, pets, level ups, XP milestones, collection log items, achievement diaries, Combat Achievements, raid loot, quest completions, and more. Features always-included players, custom filters, and granular threshold controls for a cleaner clan chat experience."
+        description = "Clan chat filter to hide unwanted broadcasts and reduce chat clutter. Customize which messages to show or hide including: drops (with GP thresholds), personal bests, pets, level ups, XP milestones, collection log items, achievement diaries, Combat Achievements, raid loot, quest completions, and more. Features always-included players, custom and regex filters, and granular threshold controls for a cleaner clan chat experience."
 )
 public class GuildSpamFilterPlugin extends Plugin
 {
     private static final String EASY = "Easy";
+    private static final String RAID_LOOT_TEXT = "received special loot from a raid";
+    private static final String CABBAGE = "Cabbage";
 
     @Inject
     private Client client;
@@ -65,6 +70,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private GuildSpamFilterConfig config;
     private HashSet<String> personalBestsToIncludeOrExclude;
     private HashSet<String> customFilters;
+    private HashMap<String, Pattern> customRegexFilters;
     private HashSet<String> alwaysIncludedPlayerNames;
     private ArrayList<CollectionLogTab> collectionLogTabs;
     // Lowercase item name to item id, for every item on the collection log's Raids tab
@@ -82,16 +88,14 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void startUp() throws RuntimeException, IOException
     {
-        log.info("Clan Spam Filter started");
-        personalBestsToIncludeOrExclude = new HashSet<String>();
-        customFilters = new HashSet<String>();
-        alwaysIncludedPlayerNames = new HashSet<String>();
+        log.debug("Clan Spam Filter started");
         collectionLogTabs = new ArrayList<CollectionLogTab>();
         raidItemIds = new HashMap<String, Integer>();
 
         clientThread.invoke(this::loadCollectionLog);
         updatePersonalBestsToIncludeOrExclude();
         updateCustomFilters();
+        updateCustomRegexFilters();
         updateAlwaysIncludedPlayerNames();
 
         clientThread.invoke(client::refreshChat);
@@ -100,9 +104,10 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void shutDown()
     {
-        log.info("Clan Spam Filter stopped");
+        log.debug("Clan Spam Filter stopped");
         personalBestsToIncludeOrExclude = null;
         customFilters = null;
+        customRegexFilters = null;
         alwaysIncludedPlayerNames = null;
         collectionLogTabs = null;
         raidItemIds = null;
@@ -130,7 +135,7 @@ public class GuildSpamFilterPlugin extends Plugin
 
             if (!CollectionLogTab.KNOWN_NAMES.contains(tab.name))
             {
-                log.warn("Unknown collection log tab \"{}\", so its items can't be filtered", tab.name);
+                log.debug("Unknown collection log tab \"{}\", so its items can't be filtered", tab.name);
             }
 
             if (tab.name.equals(CollectionLogTab.RAIDS))
@@ -147,75 +152,80 @@ public class GuildSpamFilterPlugin extends Plugin
 
         if (raidItemIds.isEmpty())
         {
-            log.warn("Found no raid items in the collection log, so raid loot won't be filtered");
+            log.debug("Found no raid items in the collection log, so raid loot won't be filtered");
         }
 
-        log.info("Loaded {} collection log items in {} tabs, including {} raid items",
+        log.debug("Loaded {} collection log items in {} tabs, including {} raid items",
                 itemCount, collectionLogTabs.size(), raidItemIds.size());
         return true;
     }
 
     private void updatePersonalBestsToIncludeOrExclude()
     {
-        personalBestsToIncludeOrExclude.clear();
-        String[] values = config.personalBestsToIncludeOrExclude()
-                                .split(",");
-        if (values.length > 0)
-        {
-            for (String value : values)
-            {
-                value = value.trim()
-                             .toLowerCase();
-                if (value.length() > 0)
-                {
-                    personalBestsToIncludeOrExclude.add(value);
-                }
-            }
-        }
-
+        personalBestsToIncludeOrExclude = readList(config.personalBestsToIncludeOrExclude());
         log.debug("Personal bests to include or exclude: {}", personalBestsToIncludeOrExclude);
     }
 
     private void updateCustomFilters()
     {
-        customFilters.clear();
-        String[] values = config.customFilters()
-                                .split(",");
-        if (values.length > 0)
-        {
-            for (String value : values)
-            {
-                value = value.trim()
-                             .toLowerCase();
-                if (value.length() > 0)
-                {
-                    customFilters.add(value);
-                }
-            }
-        }
-
+        customFilters = readList(config.customFilters());
         log.debug("Custom filters: {}", customFilters);
     }
 
     private void updateAlwaysIncludedPlayerNames()
     {
-        alwaysIncludedPlayerNames.clear();
-        String[] values = config.alwaysIncludedPlayerNames()
-                                .split(",");
-        if (values.length > 0)
+        alwaysIncludedPlayerNames = readList(config.alwaysIncludedPlayerNames());
+        log.debug("Always-included players: {}", alwaysIncludedPlayerNames);
+    }
+
+    private void updateCustomRegexFilters()
+    {
+        // Keyed by the expression, since Pattern has no equals, so a set of them would keep duplicates
+        customRegexFilters = new HashMap<String, Pattern>();
+        // One per line rather than comma-separated, since commas are part of regular expressions, like \d{1,3}
+        for (String value : config.customRegexFilters().split("[\\r\\n]+"))
         {
-            for (String value : values)
+            // Broadcasts are matched with normal spaces too, see filterCustomRegexFilters
+            value = withNormalSpaces(value).trim();
+            if (value.length() > 0 && !customRegexFilters.containsKey(value))
             {
-                value = value.trim()
-                             .toLowerCase();
-                if (value.length() > 0)
+                try
                 {
-                    alwaysIncludedPlayerNames.add(value);
+                    customRegexFilters.put(value, Pattern.compile(value, Pattern.CASE_INSENSITIVE));
+                }
+                catch (PatternSyntaxException e)
+                {
+                    log.debug("Ignoring custom regex filter \"{}\", which isn't a valid regular expression: {}",
+                            value, e.getDescription());
                 }
             }
         }
 
-        log.debug("Always-included players: {}", alwaysIncludedPlayerNames);
+        log.debug("Custom regex filters: {}", customRegexFilters.keySet());
+    }
+
+    // Lowercase entries of a list setting. They can be separated by commas, new lines or both, with or without
+    // spaces, so "a,b", "a, b" and "a,\nb" all give the same list
+    private static HashSet<String> readList(String text)
+    {
+        HashSet<String> values = new HashSet<String>();
+        for (String value : text.split("[,\\r\\n]"))
+        {
+            value = withNormalSpaces(value).trim()
+                                           .toLowerCase();
+            if (value.length() > 0)
+            {
+                values.add(value);
+            }
+        }
+
+        return values;
+    }
+
+    // The game writes spaces in player names as non-breaking spaces, which users can't tell apart from normal ones
+    private static String withNormalSpaces(String text)
+    {
+        return text.replace(' ', ' ');
     }
 
     private boolean isBroadcastMessageForPlayer(String playerName, String broadcastMessage)
@@ -268,6 +278,11 @@ public class GuildSpamFilterPlugin extends Plugin
                 updateCustomFilters();
             }
             else if (event.getKey()
+                          .equals("customRegexFilters"))
+            {
+                updateCustomRegexFilters();
+            }
+            else if (event.getKey()
                           .equals("excludedPlayerNames"))
             {
                 updateAlwaysIncludedPlayerNames();
@@ -316,7 +331,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             // Show a broadcast we can't read, and say which one, instead of letting RuneLite log a full stack trace
             // for it on every chat refresh
-            log.warn("Couldn't check broadcast \"{}\", so it's shown: {}", message, e.toString());
+            log.debug("Couldn't check broadcast \"{}\", so it's shown: {}", message, e.toString());
             hide = false;
         }
 
@@ -343,6 +358,8 @@ public class GuildSpamFilterPlugin extends Plugin
         // Check all filter conditions
         return filterLeaguesBroadcasts(message) ||
                 filterPersonalBests(cleanedMessage) ||
+                filterCabbageRaidLoot(cleanedMessage) ||
+                filterUntradeableRaidLoot(cleanedMessage) ||
                 filterRaidDrops(cleanedMessage) ||
                 filterRegularDrops(cleanedMessage) ||
                 filterPets(cleanedMessage) ||
@@ -362,7 +379,8 @@ public class GuildSpamFilterPlugin extends Plugin
                 filterCombatLevelUp(cleanedMessage) ||
                 filterCombatAchievements(cleanedMessage) ||
                 filterAchievementDiaries(cleanedMessage) ||
-                filterCustomFilters(cleanedMessage);
+                filterCustomFilters(cleanedMessage) ||
+                filterCustomRegexFilters(cleanedMessage);
     }
 
     private boolean isAlwaysIncludedPlayer(String message)
@@ -398,7 +416,8 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (config.filterPersonalBests() && message.contains("achieved a new"))
         {
-            String partWithoutPlayerName = message.substring(12);
+            // Only the part after the player's name, so a name like "Vorkath Fan" doesn't match the list
+            String partWithoutPlayerName = message.substring(message.indexOf("achieved a new"));
             String lowercaseMessage = partWithoutPlayerName.toLowerCase();
 
             switch (config.personalBestMode())
@@ -461,71 +480,194 @@ public class GuildSpamFilterPlugin extends Plugin
         return false;
     }
 
-    private boolean filterRaidDrops(String message)
+    private boolean filterCabbageRaidLoot(String message)
     {
-        if (config.filterRaidDrop() && message.contains("received special loot from a raid"))
+        // The Fractured Archive broadcasts Cabbages as "very valuable" special loot as a joke
+        if (config.filterCabbageRaidLoot() && message.contains(RAID_LOOT_TEXT) &&
+                readLoot(message).itemName.equalsIgnoreCase(CABBAGE))
         {
-            // "...from a raid: Twisted bow (1,500,000,000 coins)." The coin value hasn't always been included
-            String itemPart = message.substring(message.lastIndexOf(":") + 1);
-            int valueIndex = itemPart.lastIndexOf("(");
-            if (valueIndex != -1 && itemPart.substring(valueIndex).contains("coins"))
-            {
-                itemPart = itemPart.substring(0, valueIndex);
-            }
+            log.debug("Hiding Cabbage raid loot");
+            return true;
+        }
 
-            String itemName = itemPart.trim();
-            if (itemName.endsWith("."))
-            {
-                itemName = itemName.substring(0, itemName.length() - 1).trim();
-            }
+        return false;
+    }
 
-            Integer itemId = raidItemIds.get(itemName.toLowerCase());
-            if (itemId != null)
+    private boolean filterUntradeableRaidLoot(String message)
+    {
+        if (config.filterUntradeableRaidLoot() && message.contains(RAID_LOOT_TEXT))
+        {
+            Loot loot = readLoot(message);
+            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase());
+            if (itemId != null && !itemManager.getItemComposition(itemId).isTradeable())
             {
-                // Looked up now rather than cached, so the price is always current
-                long gpValue = itemManager.getItemPrice(itemId);
-                if (gpValue < config.raidLootGpThreshold() ||
-                        gpValue == Integer.MAX_VALUE && gpValue == config.raidLootGpThreshold())
-                {
-                    log.debug("Hiding raid loot {} worth {} gp (Raid Loot GP Threshold: {})",
-                            itemName, gpValue, config.raidLootGpThreshold());
-                    return true;
-                }
-            }
-            else
-            {
-                log.debug("Showing raid loot {}, since it isn't on the collection log's Raids tab", itemName);
+                log.debug("Hiding untradeable raid loot {}", loot.itemName);
+                return true;
             }
         }
 
         return false;
     }
 
-    private boolean filterRegularDrops(String message)
+    private boolean filterRaidDrops(String message)
     {
-        if (config.filterRegularDrops() && message.contains("received a drop"))
+        if (config.filterRaidDrop() && message.contains(RAID_LOOT_TEXT))
         {
-            int index = message.lastIndexOf("(");
-            int index2 = message.lastIndexOf(")");
-            long gpValue = index != -1 && index2 > index ? readNumber(message.substring(index + 1, index2)) : -1;
-
-            if (gpValue != -1)
+            Loot loot = readLoot(message);
+            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase());
+            boolean isCabbage = loot.itemName.equalsIgnoreCase(CABBAGE);
+            if (itemId == null && !isCabbage)
             {
-                if (gpValue < config.lootGpThreshold() ||
-                        gpValue == Integer.MAX_VALUE && gpValue == config.lootGpThreshold())
-                {
-                    log.debug("Hiding drop worth {} gp (Loot GP Threshold: {})", gpValue, config.lootGpThreshold());
-                    return true;
-                }
+                log.debug("Showing raid loot {}, since it isn't on the collection log's Raids tab", loot.itemName);
+                return false;
             }
-            else
+
+            // Cabbages aren't on the Raids tab, so their id is looked up by name
+            long gpValue = isCabbage ? findHighAlchValue(findTradeableItemId(loot.itemName), loot) :
+                    findRaidLootValue(itemId, loot);
+
+            if (gpValue == -1)
             {
-                log.debug("Hiding drop without a value");
+                log.debug("Hiding raid loot {} without a price (Raid Loot GP Threshold: {})",
+                        loot.itemName, config.raidLootGpThreshold());
+                return true;
+            }
+
+            if (isBelowThreshold(gpValue, config.raidLootGpThreshold()))
+            {
+                log.debug("Hiding raid loot {} x {} worth {} gp (Raid Loot GP Threshold: {})",
+                        loot.quantity, loot.itemName, gpValue, config.raidLootGpThreshold());
                 return true;
             }
         }
 
         return false;
+    }
+
+    // Returns -1 if the value can't be found
+    private long findRaidLootValue(int itemId, Loot loot)
+    {
+        // Untradeable items have no Grand Exchange price, so they're judged by their high-alch value
+        if (!itemManager.getItemComposition(itemId).isTradeable())
+        {
+            return findHighAlchValue(itemId, loot);
+        }
+
+        // Looked up now rather than cached, so the price is always current. Nothing has a price before RuneLite has
+        // fetched prices, so fall back to the coin value in the broadcast
+        long price = itemManager.getItemPrice(itemId);
+        return price > 0 ? price * loot.quantity : loot.coinValue;
+    }
+
+    // Returns -1 if itemId is -1
+    private long findHighAlchValue(int itemId, Loot loot)
+    {
+        return itemId != -1 ? (long) itemManager.getItemComposition(itemId).getHaPrice() * loot.quantity : -1;
+    }
+
+    private static final class Loot
+    {
+        String itemName;
+        long quantity = 1;
+        // -1 if the broadcast has no coin value
+        long coinValue = -1;
+    }
+
+    // Reads raid loot and drop broadcasts. The game has used several formats:
+    // "...received a drop: Viggora's chainmace (u) (3,950,787 coins).", "...from a raid: 884 x Iron ore (very valuable)."
+    // and "...from a raid: Cabbage."
+    private static Loot readLoot(String message)
+    {
+        Loot loot = new Loot();
+        String itemPart = message.substring(message.lastIndexOf(":") + 1).trim();
+        if (itemPart.endsWith("."))
+        {
+            itemPart = itemPart.substring(0, itemPart.length() - 1).trim();
+        }
+
+        // Remove the value the game adds after the item name, but keep brackets that are part of the name,
+        // like "Scythe of vitur (uncharged)"
+        int bracketIndex = itemPart.lastIndexOf("(");
+        while (bracketIndex != -1 && itemPart.endsWith(")"))
+        {
+            String bracketPart = itemPart.substring(bracketIndex);
+            if (bracketPart.contains("coins"))
+            {
+                loot.coinValue = readNumber(bracketPart);
+            }
+            else if (!bracketPart.contains("valuable"))
+            {
+                break;
+            }
+
+            itemPart = itemPart.substring(0, bracketIndex).trim();
+            bracketIndex = itemPart.lastIndexOf("(");
+        }
+
+        int quantityIndex = itemPart.indexOf(" x ");
+        if (quantityIndex != -1 && itemPart.substring(0, quantityIndex).matches("\\d[\\d,]*"))
+        {
+            loot.quantity = readNumber(itemPart.substring(0, quantityIndex));
+            itemPart = itemPart.substring(quantityIndex + 3).trim();
+        }
+
+        loot.itemName = itemPart;
+        return loot;
+    }
+
+    // A threshold at its maximum, the default, hides everything, even values too big to type into the setting
+    private static boolean isBelowThreshold(long gpValue, int threshold)
+    {
+        return threshold == Integer.MAX_VALUE || gpValue < threshold;
+    }
+
+    private boolean filterRegularDrops(String message)
+    {
+        if (config.filterRegularDrops() && message.contains("received a drop"))
+        {
+            // Drops normally include their coin value. Without one, like "(very valuable)", use the Grand Exchange price
+            Loot loot = readLoot(message);
+            long gpValue = loot.coinValue != -1 ? loot.coinValue : findGrandExchangeValue(loot);
+
+            if (gpValue != -1)
+            {
+                if (isBelowThreshold(gpValue, config.lootGpThreshold()))
+                {
+                    log.debug("Hiding drop {} x {} worth {} gp (Loot GP Threshold: {})",
+                            loot.quantity, loot.itemName, gpValue, config.lootGpThreshold());
+                    return true;
+                }
+            }
+            else
+            {
+                log.debug("Hiding drop {} without a value", loot.itemName);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Returns -1 if no tradeable item has exactly this name, or it has no price
+    private long findGrandExchangeValue(Loot loot)
+    {
+        int itemId = findTradeableItemId(loot.itemName);
+        long price = itemId != -1 ? itemManager.getItemPrice(itemId) : 0;
+        return price > 0 ? price * loot.quantity : -1;
+    }
+
+    // Returns -1 if no tradeable item has exactly this name
+    private int findTradeableItemId(String itemName)
+    {
+        for (ItemPrice item : itemManager.search(itemName))
+        {
+            if (item.getName().equalsIgnoreCase(itemName))
+            {
+                return item.getId();
+            }
+        }
+
+        return -1;
     }
 
     private boolean filterPets(String message)
@@ -1029,12 +1171,30 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (customFilters.size() > 0)
         {
-            String lowercaseMessage = message.toLowerCase();
+            String lowercaseMessage = withNormalSpaces(message).toLowerCase();
             for (String text : customFilters)
             {
                 if (lowercaseMessage.contains(text))
                 {
                     log.debug("Hiding broadcast matching custom filter \"{}\"", text);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean filterCustomRegexFilters(String message)
+    {
+        if (customRegexFilters.size() > 0)
+        {
+            String messageWithNormalSpaces = withNormalSpaces(message);
+            for (Pattern pattern : customRegexFilters.values())
+            {
+                if (pattern.matcher(messageWithNormalSpaces).find())
+                {
+                    log.debug("Hiding broadcast matching custom regex filter \"{}\"", pattern.pattern());
                     return true;
                 }
             }

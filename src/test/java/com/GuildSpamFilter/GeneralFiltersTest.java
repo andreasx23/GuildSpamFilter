@@ -5,6 +5,7 @@ import com.GuildSpamFilter.Configs.CombatAchievementTier;
 import com.GuildSpamFilter.Configs.PersonalBestMode;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.when;
 
 public class GeneralFiltersTest extends FilterTestBase
@@ -64,6 +65,45 @@ public class GeneralFiltersTest extends FilterTestBase
         assertHidden(VORKATH_PERSONAL_BEST);
     }
 
+    @Test
+    public void readsPersonalBestsWithoutHas()
+    {
+        when(config.filterPersonalBests()).thenReturn(true);
+        setPersonalBestList("Doom of Mokhaiotl");
+
+        // Seen in an in-game screenshot, March 2026: no "has", and no full stop
+        String doomPersonalBest = "Kroghs achieved a new personal best deep delve at the Doom of Mokhaiotl: Level 28";
+        assertShown(doomPersonalBest);
+
+        setPersonalBestList("vorkath");
+        assertHidden(doomPersonalBest);
+    }
+
+    @Test
+    public void personalBestListAcceptsAnySeparator()
+    {
+        when(config.filterPersonalBests()).thenReturn(true);
+
+        for (String list : listsOf("Vorkath", "zulrah"))
+        {
+            setPersonalBestList(list);
+            assertFalse("Personal bests " + describeList(list),
+                    isHidden(VORKATH_PERSONAL_BEST) || isHidden(ZULRAH_PERSONAL_BEST));
+            assertHidden(CHAMBERS_OF_XERIC_PERSONAL_BEST);
+        }
+    }
+
+    @Test
+    public void personalBestListIgnoresThePlayerName()
+    {
+        when(config.filterPersonalBests()).thenReturn(true);
+        setPersonalBestList("vorkath, fractured archive");
+
+        assertHidden("Vorkath Fan has achieved a new Zulrah personal best: 0:58.20");
+        // Seen in an in-game screenshot, October 2026
+        assertShown("Keyoh has achieved a new The Fractured Archive (team size: 3) Normal mode Overall personal best: 17:44.40");
+    }
+
     // Pets, clan members, quests, hardcore deaths and the login message
 
     @Test
@@ -90,7 +130,8 @@ public class GeneralFiltersTest extends FilterTestBase
     {
         when(config.filterClanMemberKicked()).thenReturn(true);
 
-        assertHidden("Biceps Btw has expelled Store Biceps from the clan.");
+        // Seen in an in-game screenshot, January 2024. The game says "expelled", never "kicked"
+        assertHidden("MindMySnipe has expelled SuckUduck from the clan.");
     }
 
     @Test
@@ -106,7 +147,8 @@ public class GeneralFiltersTest extends FilterTestBase
     {
         when(config.filterHardcoreDeath()).thenReturn(true);
 
-        assertHidden("Biceps Btw has died and lost their hardcore ironman status!");
+        // Seen in an in-game screenshot, November 2022
+        assertHidden("Biceps Btw has died and lost their hardcore ironman status.");
     }
 
     @Test
@@ -216,6 +258,17 @@ public class GeneralFiltersTest extends FilterTestBase
         assertHidden("Biceps Btw has completed an Easy combat task: Noxious Foe.");
     }
 
+    @Test
+    public void readsLowercaseCombatTaskTiers()
+    {
+        when(config.filterCombatAchievementTasks()).thenReturn(true);
+        when(config.combatAchievementThreshold()).thenReturn(CombatAchievementTier.GRANDMASTER);
+
+        // Seen in an in-game screenshot, April 2024: the game writes task tiers in lowercase
+        assertShown("Biceps Btw has completed a grandmaster combat task: Whispered.");
+        assertHidden("Biceps Btw has completed a master combat task: Whispered.");
+    }
+
     // Combat level
 
     @Test
@@ -225,7 +278,8 @@ public class GeneralFiltersTest extends FilterTestBase
         when(config.combatLevelUpThreshold()).thenReturn(100);
 
         assertHidden("Biceps Btw has reached combat level 99.");
-        assertShown("Biceps Btw has reached combat level 100.");
+        // Seen in an in-game screenshot, April 2026
+        assertShown("snolpiksvin has reached combat level 100.");
     }
 
     @Test
@@ -240,7 +294,8 @@ public class GeneralFiltersTest extends FilterTestBase
     @Test
     public void maxCombatIsHiddenOnlyWhenTheThresholdIsAbove126()
     {
-        String maxCombat = "Biceps Btw has reached the highest possible combat level of 126!";
+        // Seen in an in-game screenshot, July 2025
+        String maxCombat = "Nuclear Pimp has reached the highest possible combat level of 126!";
         when(config.filterCombatLevelUps()).thenReturn(true);
 
         assertHidden(maxCombat);

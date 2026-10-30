@@ -88,7 +88,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "pbsToIncludeOrExclude",
             name = "Personal Bests to Include or Exclude",
-            description = "Comma-separated list of personal bests to include or exclude based on the selected mode (e.g. Chambers of Xeric, theatre of blood). Case insensitive.",
+            description = "List of personal bests to include or exclude based on the selected mode, separated by commas or new lines (e.g. Chambers of Xeric, theatre of blood). Case insensitive.",
             section = filterSectionGeneral,
             position = 2
     )
@@ -269,11 +269,23 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "customFilters",
             name = "Custom Filters",
-            description = "Comma-separated list of custom terms to filter from broadcasts (e.g. Chambers of Xeric, theatre of blood). Any broadcast containing these terms will be removed. Case insensitive.",
+            description = "List of custom terms to filter from broadcasts, separated by commas or new lines (e.g. Chambers of Xeric, theatre of blood). Any broadcast containing these terms will be removed. Case insensitive.",
             section = filterSectionGeneral,
             position = 17
     )
     default String customFilters()
+    {
+        return "";
+    }
+
+    @ConfigItem(
+            keyName = "customRegexFilters",
+            name = "Custom Regex Filters",
+            description = "Regular expressions to filter from broadcasts, one per line (e.g. has reached (Fishing|Cooking) level). Any broadcast with a match will be removed. Case insensitive. Invalid expressions are ignored.",
+            section = filterSectionGeneral,
+            position = 18
+    )
+    default String customRegexFilters()
     {
         return "";
     }
@@ -367,7 +379,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "filterRaidDrop",
             name = "Filter Raid Drops",
-            description = "Remove raid drop broadcasts from clan chat",
+            description = "Remove raid drop broadcasts worth less than the Raid Loot GP Threshold from clan chat. Untradeable raid loot and Cabbages are judged by their high-alch value",
             section = filterSectionPvm,
             position = 0
     )
@@ -379,7 +391,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "raidLootGpThreshold",
             name = "Raid Loot GP Threshold",
-            description = "Raid loot worth less than this, based on its Grand Exchange price, is removed. The default removes all of it. (Default: 2,147,483,647)",
+            description = "Raid loot worth less than this, based on its Grand Exchange price, is removed. Untradeable raid loot and Cabbages are judged by their high-alch value instead, unless Filter Untradeable Raid Loot or Filter Cabbage Raid Loot removes them. The default removes all of it. (Default: 2,147,483,647)",
             section = filterSectionPvm,
             position = 1
     )
@@ -389,11 +401,35 @@ public interface GuildSpamFilterConfig extends Config
     }
 
     @ConfigItem(
+            keyName = "filterCabbageRaidLoot",
+            name = "Filter Cabbage Raid Loot",
+            description = "Remove the joke \"special loot from a raid: Cabbage\" broadcasts from The Fractured Archive, even when Filter Raid Drops is off. When this is off but Filter Raid Drops is on, Cabbages are judged by their high-alch value",
+            section = filterSectionPvm,
+            position = 2
+    )
+    default boolean filterCabbageRaidLoot()
+    {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "filterUntradeableRaidLoot",
+            name = "Filter Untradeable Raid Loot",
+            description = "Remove raid loot that can't be traded, like The Fractured Archive's fragments, even when Filter Raid Drops is off. When this is off but Filter Raid Drops is on, untradeable raid loot is judged by its high-alch value",
+            section = filterSectionPvm,
+            position = 3
+    )
+    default boolean filterUntradeableRaidLoot()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "filterRegularDrops",
             name = "Filter Regular Drops",
             description = "Remove regular drop broadcasts from clan chat",
             section = filterSectionPvm,
-            position = 2
+            position = 4
     )
     default boolean filterRegularDrops()
     {
@@ -403,9 +439,9 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "lootGpThreshold",
             name = "Loot GP Threshold",
-            description = "Drops worth less than this are removed. The default removes all of them. (Default: 2,147,483,647)",
+            description = "Drops worth less than this are removed. Drops broadcast without a coin value are judged by their Grand Exchange price. The default removes all of them. (Default: 2,147,483,647)",
             section = filterSectionPvm,
-            position = 3
+            position = 5
     )
     default int lootGpThreshold()
     {
@@ -417,7 +453,7 @@ public interface GuildSpamFilterConfig extends Config
             name = "Filter Rare Drops",
             description = "Remove rare drop broadcasts from clan chat",
             section = filterSectionPvm,
-            position = 4
+            position = 6
     )
     default boolean filterRareDrops()
     {
@@ -562,7 +598,7 @@ public interface GuildSpamFilterConfig extends Config
     @ConfigItem(
             keyName = "excludedPlayerNames",
             name = "Player Names to Always Include",
-            description = "Comma-separated list of player names whose broadcasts will always be shown regardless of other filter settings (e.g. Biceps Btw, store biceps). Case insensitive.",
+            description = "List of player names whose broadcasts will always be shown regardless of other filter settings, separated by commas or new lines (e.g. Biceps Btw, store biceps). Case insensitive.",
             section = miscellaneous,
             position = 0,
             hidden = false

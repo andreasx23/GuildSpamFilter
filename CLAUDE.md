@@ -38,15 +38,19 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Parsing:** `indexOf`/`substring`, not regex. Numbers are read with `readNumber`, which ignores commas, "coins"
   and punctuation and returns -1 instead of throwing. The rule is: if a filter is on and the broadcast can't be
   parsed, hide it. As a safety net, `onScriptCallbackEvent` catches any exception from the filters, shows that
-  broadcast and logs one warning quoting it.
+  broadcast and logs one debug line quoting it.
 - **Threads:** filtering runs on the client thread. `onConfigChanged` is called on the Swing thread, so it does its
   list updates inside `clientThread.invoke`, together with the chat refresh.
 - **Always-included players** (`isBroadcastMessageForPlayer`): the game writes spaces in names as non-breaking spaces,
   so spaces in the configured name act as wildcards, and the name must end at a space character ("Bob" must not
   match "Bobby").
-- **Settings:** config group `GuildSpamFilterConfig.GROUP` (`"GuildSpamFilter"`). The comma-separated lists
-  (personal bests, custom filters, always-included players) are cached in `HashSet`s and only reloaded in
-  `onConfigChanged`, which matches on the settings' `keyName`s and ignores other plugins' groups. `startUp`,
+- **Settings:** config group `GuildSpamFilterConfig.GROUP` (`"GuildSpamFilter"`). The list settings (personal
+  bests, custom filters, always-included players) are read by `readList`, which splits on commas and new lines and
+  trims spaces, so `a,b`, `a, b` and `a,\nb` are the same list. Custom regex filters are one per line instead, since
+  regular expressions contain commas; they're kept in a map keyed by the expression, since `Pattern` has no
+  `equals`, so repeated lines are dropped. Invalid ones are skipped and logged. Custom filters, regex filters and
+  list entries treat non-breaking spaces as normal spaces (`withNormalSpaces`). The lists are cached and only
+  reloaded in `onConfigChanged`, which matches on the settings' `keyName`s and ignores other plugins' groups. `startUp`,
   `shutDown` and `onConfigChanged` all call `client.refreshChat()` on the client thread, so existing chat is
   refiltered.
 - **Saved names never change:** users' settings are saved under the config group, each `@ConfigItem`'s `keyName`,
@@ -60,15 +64,27 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Raid loot:** `raidItemIds` maps every item on the collection log's Raids tab to its item id (built in
   `loadCollectionLog`). The value comes from `ItemManager.getItemPrice` (GE price), looked up when the broadcast
   arrives, not from the coin value in the broadcast. Don't cache prices at load time: that runs at the login screen,
-  possibly before RuneLite has fetched prices. Items not on the Raids tab are never filtered. Since RuneLite 1.13.0,
-  `getItemPrice` returns `long`.
+  possibly before RuneLite has fetched prices. Untradeable items (`ItemComposition.isTradeable()`) are valued at
+  their high-alch value (`getHaPrice()`) instead. If a tradeable item's price is 0 (prices not fetched yet) the coin
+  value in the broadcast is used, and loot with neither is hidden. Items not on the Raids tab are never filtered by
+  "Filter Raid Drops", except The Fractured Archive's joke `Cabbage` loot, which is valued at its high-alch value
+  (its id is found by name). Two settings hide loot whether or not raid drops are filtered: `filterCabbageRaidLoot`,
+  and `filterUntradeableRaidLoot` (untradeable items on the Raids tab only). They come before `filterRaidDrops` in
+  the pipeline, so when they're on, the high-alch value and threshold don't matter. The settings' tooltips describe all
+  this, so keep them in sync. Since RuneLite 1.13.0, `getItemPrice` returns `long`.
+- **Loot parsing:** raid loot and regular drops share `readLoot`, which strips an `N x ` quantity and a trailing
+  `(N coins)` or `(very valuable)`, but keeps brackets that belong to the name (`(uncharged)`, `(e)`). Regular drops
+  use the broadcast's coin value; without one they fall back to the GE price found by exact name through
+  `ItemManager.search` (tradeable items only) times the quantity, and are hidden if that fails too. A threshold at
+  `Integer.MAX_VALUE` (the default) hides everything, including values above it (`isBelowThreshold`).
 - **Collection log:** `CollectionLogHandler.readData(client)` reads the game cache, the same data the in-game
   collection log uses: enum `2102` → tab structs (param `682` name, `683` enum of pages) → page structs (param `689`
   name, `690` enum of item ids) → `client.getItemDefinition(id).getName()`. RuneLite has no named constants for these
   ids; they match the `collection-log` (evansloan) and `kill-clog` Hub plugins. Cache reads need the client thread
   and a loaded game, so `startUp` schedules `loadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
-  `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. In the real client it logs
-  `Loaded 1721 collection log items in 5 tabs, including 67 raid items` (September 2026).
+  `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. In the real client (with `--debug`) it
+  logs `Loaded 1738 collection log items in 5 tabs, including 84 raid items` (October 2026, after The Fractured
+  Archive added 17 raid items).
   `CollectionLogTab.lowercaseItemNames` is lowercase, and `filterCollectionLogByTab` compares lowercase item names
   and switches on the tab name constants in `CollectionLogTab` (`BOSSES`, `RAIDS`, `CLUES`, `MINIGAMES`, `OTHER`),
   which must match the game's tab names exactly. Always use the constants; test fakes deliberately spell the names
@@ -83,30 +99,58 @@ plus `MessageHandlingTest` and `CollectionLogHandlerTest`.
 - `FilterTestBase` injects mocks into the real plugin with Guice and calls `startUp()`. The config mock uses
   `CALLS_REAL_METHODS`, so every setting has its real default until stubbed. Both `clientThread.invoke` overloads
   run immediately, and `FakeCollectionLog` installs a small collection log using the real cache ids.
-- Because the plugin turns filter crashes into warnings, `FilterTestBase` fails any test that logs an unexpected
-  warning. A test that expects one calls `assertWarned(text)`.
+- `FilterTestBase` fails any test where the plugin logs above debug level, or logs one of the problem messages in
+  its `PROBLEMS` list (a filter crash, an invalid regex, an unknown collection log tab, no raid items) that the
+  test didn't expect. A test that expects one calls `assertLoggedProblem(text)`. Add new problem messages to
+  `PROBLEMS`.
 - `isHidden(message)` simulates the `chatFilterCheck` stacks. For the list settings use `setCustomFilters`,
-  `setAlwaysIncludedPlayers` or `setPersonalBestList`: they fire `ConfigChanged`, because stubbing the getter alone
-  doesn't update the cached sets.
+  `setCustomRegexFilters`, `setAlwaysIncludedPlayers` or `setPersonalBestList`: they fire `ConfigChanged`, because
+  stubbing the getter alone doesn't update the cached sets. `listsOf(a, b)` gives every separator a user might type.
 
 ## Broadcast wording
 
 Filters depend on Jagex's exact wording, which changes occasionally (see git history).
 
-- **Seen in in-game screenshots** (RuneLite's screenshot plugin saves them under
-  `~/.runelite/screenshots/<player>/`, chat box included):
-  `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`,
-  `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
-  the slot count, no full stop), and
+RuneLite's screenshot plugin saves screenshots under `~/.runelite/screenshots/<player>/`, chat box included, so
+real clan broadcasts can be read from them. Tests use these real lines (with the date seen) wherever one exists.
+
+- **Drops and raid loot:**
+  - `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`
+  - `Biceps Btw received a rare drop: Magma mutagen` (no full stop; only seen in 2022)
+  - `Corydonn received special loot from a raid: Kodai insignia (47,809,774 coins).`
+  - `Biceps Btw received special loot from a raid: Archivist's folio (inert).` (no value)
+  - `Uganda Ulrik received special loot from a raid: Fragment of whispering wind.` (untradeable, no value)
+  - `Smallman26 received special loot from a raid: Cabbage.`
+  - `Voliz received special loot from a raid: 77 x Ascension shards (very valuable).` (a quantity, and "very
+    valuable" instead of a value; for a week in October 2026 every Fractured Archive drop was broadcast like this)
+- **Skilling:** `Csurma has reached Agility level 99.` (the `level of 90` form is never used for skills),
+  `Radmer has reached a total level of 2000.` (no thousands separator; milestones start at 100),
+  `Biceps Btw has reached the highest possible total level of 2376!`,
+  `Snorhax has reached 95,000,000 XP in Firemaking.`
+- **Combat:** `snolpiksvin has reached combat level 100.`,
+  `Nuclear Pimp has reached the highest possible combat level of 126!`,
+  `Biceps Btw has completed a grandmaster combat task: Whispered.` (lowercase tier),
   `Biceps Btw has unlocked the Grandmaster tier of rewards from Combat Achievements!`
-- **Also checked by the `better-clan-broadcasts` plugin:** `received special loot from a raid:` (currently ends
-  with `(N coins)`, which it hasn't always), `has completed a quest:`, `personal best:`, `has defeated` /
-  `has been defeated by`, `has a funny feeling like`, `has been invited into the clan by`,
-  `has completed the <Tier> <Area> diary.`, `has completed a(n) <Tier> combat task`,
+- **PvP:** `Crunch704 has defeated dahlinho and received (27,735,720 coins) worth of loot!`,
+  `CyborgC7pher has been defeated by tom is bald in The Wilderness and lost (316,298 coins) worth of loot.`, and
+  without loot `Latryy has been defeated by Iron TimPvm in The Wilderness. Clearly Latryy struggles with clicking.`
+- **Personal bests:**
+  `Smallman26 has achieved a new The Fractured Archive (team size: 3) Normal mode Overall personal best: 30:28.20`,
+  and without "has" or a full stop:
+  `Kroghs achieved a new personal best deep delve at the Doom of Mokhaiotl: Level 28`
+- **Clan and other:** `MindMySnipe has expelled SuckUduck from the clan.` (never "kicked"),
+  `Biceps Btw has died and lost their hardcore ironman status.`,
+  `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
+  the slot count, no full stop)
+- **Not filtered by anything** (only custom filters catch them): `CasperWolffU has left the clan.`,
+  `Tuborg x has earned the Adamant rank!`, `Biceps Btw received a clue item: Flared trousers (3,176,869 coins).`,
+  `Biceps Btw received an item: Ancient blood ornament kit`, and Leagues broadcasts without the `<img=22>` icon,
+  if any (`Jern Lem has unlocked their tier 7 League relic!`).
+- **Also checked by the `better-clan-broadcasts` plugin:** `has completed a quest:`, `has a funny feeling like`,
+  `has been invited into the clan by`, `has completed the <Tier> <Area> diary.`,
   `To talk in your clan's channel, start each line of chat with // or /c.`
-- **Not verified against a real broadcast:** skill level-ups (tests use `has reached Fishing level 90.`; the parser
-  also accepts `level of 90`), hardcore deaths, kicked members, rare drops, the PvP `(N coins)` format, and
-  whether total levels contain a thousands separator (the parser accepts both).
+- **Not verified against a real broadcast:** pets, quest completions, achievement diaries and new members (tests
+  use the wording above), and a rare drop newer than 2022.
 
 ## Plugin Hub and releases
 
@@ -141,9 +185,10 @@ Filters depend on Jagex's exact wording, which changes occasionally (see git his
 
 - Allman braces, 4-space indentation, standard Java naming (camelCase methods and fields, no `_` prefixes, no
   `Enum` suffix on types).
-- Logging uses SLF4J `{}` placeholders, never string concatenation. `info` is for once-per-session events (start,
-  stop, collection log loaded) and `warn` for problems that silently disable a filter. Per-broadcast logging is
-  `debug`: each broadcast is logged once as `Checking broadcast: …`, and a filter that hides it logs one
+- **Log only with `log.debug`**, never `info`, `warn` or `error`: the plugin's logs are only for `--debug`
+  sessions, and the tests fail on anything higher. Use SLF4J `{}` placeholders, never string concatenation.
+  Problems that silently disable a filter (see `PROBLEMS` in `FilterTestBase`) are debug lines too. Each broadcast
+  is logged once as `Checking broadcast: …`, and a filter that hides it logs one
   `Hiding … (<setting name as shown in the panel>: <value>)` line with the reason. A broadcast with no `Hiding` line
   was shown, so don't add "detected" lines.
 - Spell names out instead of abbreviating (`personalBestMode`, not `pbMode`; `alwaysIncludedPlayerNames`, not
