@@ -1,5 +1,6 @@
 package com.GuildSpamFilter;
 
+import net.runelite.api.ItemComposition;
 import net.runelite.http.api.item.ItemPrice;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PvmFiltersTest extends FilterTestBase
@@ -16,6 +18,10 @@ public class PvmFiltersTest extends FilterTestBase
     private static final String SCROLL_RAID_DROP = "Biceps Btw received special loot from a raid: Dexterous prayer scroll (20,000,000 coins).";
     // Seen in an in-game screenshot, October 2026
     private static final String CABBAGE_RAID_DROP = "Smallman26 received special loot from a raid: Cabbage.";
+    private static final String FRAGMENT_RAID_DROP = "Uganda Ulrik received special loot from a raid: Fragment of whispering wind.";
+
+    private static final String CABBAGE = "Cabbage";
+    private static final String FRAGMENT = "Fragment of whispering wind";
 
     private static final String WHIP_DROP = "Biceps Btw received a drop: Abyssal whip (1,500,000 coins).";
     private static final String BONES_DROP = "Biceps Btw received a drop: Dragon bones (2,500 coins).";
@@ -154,7 +160,7 @@ public class PvmFiltersTest extends FilterTestBase
     @Test
     public void usesTheBroadcastValueForRaidLootWithoutAPrice()
     {
-        // Untradeable items have no Grand Exchange price, and nothing has one before RuneLite has fetched prices
+        // Nothing has a Grand Exchange price before RuneLite has fetched prices
         when(config.filterRaidDrop()).thenReturn(true);
         when(config.raidLootGpThreshold()).thenReturn(1_000_000_000);
         setPrice("Twisted bow", 0L);
@@ -185,11 +191,86 @@ public class PvmFiltersTest extends FilterTestBase
     }
 
     @Test
-    public void raidDropFilterLeavesCabbagesAlone()
+    public void raidDropFilterJudgesCabbagesByTheirHighAlchValue()
     {
+        setTradeablePrice(1965, CABBAGE, 20L);
+        setItem(1965, true, 0);
         when(config.filterRaidDrop()).thenReturn(true);
 
+        when(config.raidLootGpThreshold()).thenReturn(1);
+        assertHidden(CABBAGE_RAID_DROP);
+
+        when(config.raidLootGpThreshold()).thenReturn(0);
         assertShown(CABBAGE_RAID_DROP);
+    }
+
+    @Test
+    public void raidDropFilterHidesCabbagesItCantFind()
+    {
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(1);
+
+        assertHidden(CABBAGE_RAID_DROP);
+    }
+
+    // Untradeable raid loot, like The Fractured Archive's fragments
+
+    @Test
+    public void hidesUntradeableRaidLootEvenWhenRaidDropsAreShown()
+    {
+        setItem(collectionLog.itemId(FRAGMENT), false, 18_000);
+        when(config.filterUntradeableRaidLoot()).thenReturn(true);
+
+        assertHidden(FRAGMENT_RAID_DROP);
+        assertShown(TWISTED_BOW_RAID_DROP);
+        // Only items on the collection log's Raids tab are known to be untradeable or not
+        assertShown(CABBAGE_RAID_DROP);
+    }
+
+    @Test
+    public void raidDropFilterJudgesUntradeableRaidLootByItsHighAlchValue()
+    {
+        setItem(collectionLog.itemId(FRAGMENT), false, 18_000);
+        when(config.filterRaidDrop()).thenReturn(true);
+
+        when(config.raidLootGpThreshold()).thenReturn(18_000);
+        assertShown(FRAGMENT_RAID_DROP);
+
+        when(config.raidLootGpThreshold()).thenReturn(18_001);
+        assertHidden(FRAGMENT_RAID_DROP);
+    }
+
+    @Test
+    public void cabbageSettingHidesCabbagesWhateverTheirHighAlchValue()
+    {
+        setTradeablePrice(1965, CABBAGE, 20L);
+        setItem(1965, true, 0);
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(0);
+        assertShown(CABBAGE_RAID_DROP);
+
+        when(config.filterCabbageRaidLoot()).thenReturn(true);
+        assertHidden(CABBAGE_RAID_DROP);
+    }
+
+    @Test
+    public void untradeableSettingHidesUntradeablesWhateverTheirHighAlchValue()
+    {
+        setItem(collectionLog.itemId(FRAGMENT), false, 18_000);
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(10_000);
+        assertShown(FRAGMENT_RAID_DROP);
+
+        when(config.filterUntradeableRaidLoot()).thenReturn(true);
+        assertHidden(FRAGMENT_RAID_DROP);
+    }
+
+    private void setItem(int itemId, boolean tradeable, int highAlchValue)
+    {
+        ItemComposition item = mock(ItemComposition.class);
+        when(item.isTradeable()).thenReturn(tradeable);
+        when(item.getHaPrice()).thenReturn(highAlchValue);
+        when(itemManager.getItemComposition(itemId)).thenReturn(item);
     }
 
     @Test

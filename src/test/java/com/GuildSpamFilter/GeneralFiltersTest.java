@@ -5,6 +5,7 @@ import com.GuildSpamFilter.Configs.CombatAchievementTier;
 import com.GuildSpamFilter.Configs.PersonalBestMode;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.when;
 
 public class GeneralFiltersTest extends FilterTestBase
@@ -62,6 +63,31 @@ public class GeneralFiltersTest extends FilterTestBase
         assertShown(CHAMBERS_OF_XERIC_PERSONAL_BEST);
         assertShown(ZULRAH_PERSONAL_BEST);
         assertHidden(VORKATH_PERSONAL_BEST);
+    }
+
+    @Test
+    public void personalBestListAcceptsAnySeparator()
+    {
+        when(config.filterPersonalBests()).thenReturn(true);
+
+        for (String list : listsOf("Vorkath", "zulrah"))
+        {
+            setPersonalBestList(list);
+            assertFalse("Personal bests " + describeList(list),
+                    isHidden(VORKATH_PERSONAL_BEST) || isHidden(ZULRAH_PERSONAL_BEST));
+            assertHidden(CHAMBERS_OF_XERIC_PERSONAL_BEST);
+        }
+    }
+
+    @Test
+    public void personalBestListIgnoresThePlayerName()
+    {
+        when(config.filterPersonalBests()).thenReturn(true);
+        setPersonalBestList("vorkath, fractured archive");
+
+        assertHidden("Vorkath Fan has achieved a new Zulrah personal best: 0:58.20");
+        // Seen in an in-game screenshot, October 2026
+        assertShown("Keyoh has achieved a new The Fractured Archive (team size: 3) Normal mode Overall personal best: 17:44.40");
     }
 
     // Pets, clan members, quests, hardcore deaths and the login message

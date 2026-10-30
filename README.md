@@ -22,7 +22,8 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
 - **Collection log:** by collection log tab (Bosses, Raids, Clues, Minigames, Other),
   or only for players below a set number of collection log slots
 - **Skilling:** level-ups, XP milestones, total level milestones and max total
-- **PvM:** raid loot, The Fractured Archive's joke Cabbage loot, regular drops and rare drops
+- **PvM:** raid loot, untradeable raid loot, The Fractured Archive's joke Cabbage loot, regular drops
+  and rare drops
 - **PvP:** player kills and deaths
 - **Miscellaneous:** Leagues broadcasts
 
@@ -32,5 +33,9 @@ Only broadcasts are affected. Messages your clanmates type are never hidden.
   hidden. Handy for friends or your own account.
 - **Custom filters:** hide any broadcast that contains words you choose,
   such as `Chambers of Xeric`.
+- **Custom regex filters:** for more control, hide broadcasts matching a regular expression,
+  one per line, such as `has reached (Fishing|Cooking) level`.
 - **Personal bests:** hide every personal best except the ones you list, or hide only
   the ones you list.
+
+Separate the entries in a list with commas, new lines or both. Spaces around them don't matter.

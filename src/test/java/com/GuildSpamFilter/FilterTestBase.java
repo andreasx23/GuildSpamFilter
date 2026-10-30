@@ -8,6 +8,7 @@ import com.google.inject.Guice;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.ItemComposition;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.events.ConfigChanged;
@@ -16,12 +17,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -47,6 +51,10 @@ public abstract class FilterTestBase
         client = mock(Client.class);
         clientThread = mock(ClientThread.class);
         itemManager = mock(ItemManager.class);
+        // Every item is tradeable, with no Grand Exchange price or high-alch value, unless a test changes it
+        ItemComposition tradeableItem = mock(ItemComposition.class);
+        when(tradeableItem.isTradeable()).thenReturn(true);
+        when(itemManager.getItemComposition(anyInt())).thenReturn(tradeableItem);
         // Every setting keeps its real default value unless a test changes it
         config = mock(GuildSpamFilterConfig.class, CALLS_REAL_METHODS);
 
@@ -70,7 +78,7 @@ public abstract class FilterTestBase
                 .tab("Raids")
                 .page("Chambers of Xeric", "Olmlet", "Twisted bow", "Dexterous prayer scroll", "Metamorphic dust")
                 .page("Theatre of Blood", "Scythe of vitur (uncharged)")
-                .page("The Fractured Archive", "Ascension shards")
+                .page("The Fractured Archive", "Ascension shards", "Fragment of whispering wind")
                 .tab("Clues")
                 .page("Beginner Treasure Trails", "Mole slippers")
                 .page("Easy Treasure Trails", "Blue skirt (g)")
@@ -149,6 +157,26 @@ public abstract class FilterTestBase
         assertFalse("Expected this broadcast to be shown: " + broadcast, isHidden(broadcast));
     }
 
+    // Every way a user might separate two entries in a list setting: with or without spaces, and with new lines
+    protected static List<String> listsOf(String first, String second)
+    {
+        return Arrays.asList(
+                first + "," + second,
+                first + ", " + second,
+                first + ",\n" + second,
+                first + ", \n" + second,
+                first + ",\r\n" + second,
+                first + "\n" + second,
+                first + "\n\n" + second + "\n",
+                " " + first + " ,  " + second + " ,");
+    }
+
+    // A list as the user typed it, for assertion messages
+    protected static String describeList(String list)
+    {
+        return "\"" + list.replace("\r", "\\r").replace("\n", "\\n") + "\"";
+    }
+
     protected void setPersonalBestList(String value)
     {
         when(config.personalBestsToIncludeOrExclude()).thenReturn(value);
@@ -159,6 +187,12 @@ public abstract class FilterTestBase
     {
         when(config.customFilters()).thenReturn(value);
         changeSetting("customFilters");
+    }
+
+    protected void setCustomRegexFilters(String value)
+    {
+        when(config.customRegexFilters()).thenReturn(value);
+        changeSetting("customRegexFilters");
     }
 
     protected void setAlwaysIncludedPlayers(String value)
