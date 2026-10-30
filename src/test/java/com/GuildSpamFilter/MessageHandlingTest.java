@@ -125,12 +125,12 @@ public class MessageHandlingTest extends FilterTestBase
     }
 
     @Test
-    public void showsBroadcastsItCannotReadAndWarns()
+    public void showsBroadcastsItCannotReadAndLogsWhy()
     {
         when(config.filterPets()).thenThrow(new IllegalStateException("unexpected broadcast"));
 
         assertShown(WHIP_DROP);
-        assertWarned("Couldn't check broadcast \"" + WHIP_DROP + "\"");
+        assertLoggedProblem("Couldn't check broadcast \"" + WHIP_DROP + "\"");
     }
 
     private void assertChatWasRefilteredOnTheClientThread()

@@ -43,7 +43,15 @@ public abstract class FilterTestBase
     protected GuildSpamFilterConfig config;
     protected FakeCollectionLog collectionLog;
     protected GuildSpamFilterPlugin plugin;
-    private ListAppender<ILoggingEvent> pluginWarnings;
+    // Everything the plugin logs is at debug level. These messages mean something went wrong, so a test fails if the
+    // plugin logs one that the test didn't expect with assertLoggedProblem
+    private static final List<String> PROBLEMS = Arrays.asList(
+            "Couldn't check broadcast",
+            "Ignoring custom regex filter",
+            "Unknown collection log tab",
+            "Found no raid items");
+
+    private ListAppender<ILoggingEvent> pluginLogs;
 
     @Before
     public void startPlugin() throws Exception
@@ -68,10 +76,12 @@ public abstract class FilterTestBase
             return null;
         }).when(clientThread).invoke(any(Runnable.class));
 
-        // The plugin shows broadcasts it fails to read and warns instead of throwing, so catch those warnings here
-        pluginWarnings = new ListAppender<>();
-        pluginWarnings.start();
-        pluginLogger().addAppender(pluginWarnings);
+        // The plugin shows broadcasts it fails to read and logs the problem instead of throwing, so catch those here
+        pluginLogs = new ListAppender<>();
+        pluginLogs.start();
+        pluginLogger().addAppender(pluginLogs);
+        // Everything the plugin logs is at debug level, which the logging setup on the classpath would drop
+        pluginLogger().setLevel(Level.DEBUG);
 
         collectionLog = new FakeCollectionLog()
                 .tab("Bosses").page("Abyssal Sire", "Abyssal orphan", "Abyssal whip")
@@ -100,24 +110,33 @@ public abstract class FilterTestBase
     }
 
     @After
-    public void failOnUnexpectedWarnings()
+    public void failOnUnexpectedProblems()
     {
-        pluginLogger().detachAppender(pluginWarnings);
-        for (ILoggingEvent event : pluginWarnings.list)
+        pluginLogger().detachAppender(pluginLogs);
+        pluginLogger().setLevel(null);
+        for (ILoggingEvent event : pluginLogs.list)
         {
-            if (event.getLevel().isGreaterOrEqual(Level.WARN))
+            String message = event.getFormattedMessage();
+            if (event.getLevel().isGreaterOrEqual(Level.INFO))
             {
-                fail("Unexpected warning: " + event.getFormattedMessage());
+                fail("Plugins may only log at debug level, but this was logged at " + event.getLevel() + ": " + message);
+            }
+
+            for (String problem : PROBLEMS)
+            {
+                if (message.startsWith(problem))
+                {
+                    fail("Unexpected problem: " + message);
+                }
             }
         }
     }
 
-    /** Checks the plugin warned with this text, and marks the warning as expected. */
-    protected void assertWarned(String text)
+    /** Checks the plugin logged a problem starting with this text, and marks it as expected. */
+    protected void assertLoggedProblem(String text)
     {
-        boolean warned = pluginWarnings.list.removeIf(event ->
-                event.getLevel() == Level.WARN && event.getFormattedMessage().contains(text));
-        assertTrue("Expected a warning containing: " + text, warned);
+        boolean logged = pluginLogs.list.removeIf(event -> event.getFormattedMessage().startsWith(text));
+        assertTrue("Expected a logged problem starting with: " + text, logged);
     }
 
     private static Logger pluginLogger()
@@ -157,7 +176,8 @@ public abstract class FilterTestBase
         assertFalse("Expected this broadcast to be shown: " + broadcast, isHidden(broadcast));
     }
 
-    // Every way a user might separate two entries in a list setting: with or without spaces, and with new lines
+    // Every way a user might separate two entries in a list setting: with or without spaces, tabs or non-breaking
+    // spaces before and after them, and with new lines
     protected static List<String> listsOf(String first, String second)
     {
         return Arrays.asList(
@@ -168,13 +188,19 @@ public abstract class FilterTestBase
                 first + ",\r\n" + second,
                 first + "\n" + second,
                 first + "\n\n" + second + "\n",
-                " " + first + " ,  " + second + " ,");
+                " " + first + " ,  " + second + " ,",
+                "    " + first + ", " + second + "    ",
+                "\t" + first + ",\t" + second + "\t",
+                " " + first + ", " + second);
     }
 
     // A list as the user typed it, for assertion messages
     protected static String describeList(String list)
     {
-        return "\"" + list.replace("\r", "\\r").replace("\n", "\\n") + "\"";
+        return "\"" + list.replace("\r", "\\r")
+                          .replace("\n", "\\n")
+                          .replace("\t", "\\t")
+                          .replace(" ", "\\u00A0") + "\"";
     }
 
     protected void setPersonalBestList(String value)

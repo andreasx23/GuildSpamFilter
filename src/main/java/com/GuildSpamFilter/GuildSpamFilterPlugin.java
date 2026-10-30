@@ -70,7 +70,7 @@ public class GuildSpamFilterPlugin extends Plugin
     private GuildSpamFilterConfig config;
     private HashSet<String> personalBestsToIncludeOrExclude;
     private HashSet<String> customFilters;
-    private ArrayList<Pattern> customRegexFilters;
+    private HashMap<String, Pattern> customRegexFilters;
     private HashSet<String> alwaysIncludedPlayerNames;
     private ArrayList<CollectionLogTab> collectionLogTabs;
     // Lowercase item name to item id, for every item on the collection log's Raids tab
@@ -88,7 +88,7 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void startUp() throws RuntimeException, IOException
     {
-        log.info("Clan Spam Filter started");
+        log.debug("Clan Spam Filter started");
         collectionLogTabs = new ArrayList<CollectionLogTab>();
         raidItemIds = new HashMap<String, Integer>();
 
@@ -104,7 +104,7 @@ public class GuildSpamFilterPlugin extends Plugin
     @Override
     protected void shutDown()
     {
-        log.info("Clan Spam Filter stopped");
+        log.debug("Clan Spam Filter stopped");
         personalBestsToIncludeOrExclude = null;
         customFilters = null;
         customRegexFilters = null;
@@ -135,7 +135,7 @@ public class GuildSpamFilterPlugin extends Plugin
 
             if (!CollectionLogTab.KNOWN_NAMES.contains(tab.name))
             {
-                log.warn("Unknown collection log tab \"{}\", so its items can't be filtered", tab.name);
+                log.debug("Unknown collection log tab \"{}\", so its items can't be filtered", tab.name);
             }
 
             if (tab.name.equals(CollectionLogTab.RAIDS))
@@ -152,10 +152,10 @@ public class GuildSpamFilterPlugin extends Plugin
 
         if (raidItemIds.isEmpty())
         {
-            log.warn("Found no raid items in the collection log, so raid loot won't be filtered");
+            log.debug("Found no raid items in the collection log, so raid loot won't be filtered");
         }
 
-        log.info("Loaded {} collection log items in {} tabs, including {} raid items",
+        log.debug("Loaded {} collection log items in {} tabs, including {} raid items",
                 itemCount, collectionLogTabs.size(), raidItemIds.size());
         return true;
     }
@@ -180,26 +180,28 @@ public class GuildSpamFilterPlugin extends Plugin
 
     private void updateCustomRegexFilters()
     {
-        customRegexFilters = new ArrayList<Pattern>();
+        // Keyed by the expression, since Pattern has no equals, so a set of them would keep duplicates
+        customRegexFilters = new HashMap<String, Pattern>();
         // One per line rather than comma-separated, since commas are part of regular expressions, like \d{1,3}
         for (String value : config.customRegexFilters().split("[\\r\\n]+"))
         {
-            value = value.trim();
-            if (value.length() > 0)
+            // Broadcasts are matched with normal spaces too, see filterCustomRegexFilters
+            value = withNormalSpaces(value).trim();
+            if (value.length() > 0 && !customRegexFilters.containsKey(value))
             {
                 try
                 {
-                    customRegexFilters.add(Pattern.compile(value, Pattern.CASE_INSENSITIVE));
+                    customRegexFilters.put(value, Pattern.compile(value, Pattern.CASE_INSENSITIVE));
                 }
                 catch (PatternSyntaxException e)
                 {
-                    log.warn("Ignoring custom regex filter \"{}\", which isn't a valid regular expression: {}",
+                    log.debug("Ignoring custom regex filter \"{}\", which isn't a valid regular expression: {}",
                             value, e.getDescription());
                 }
             }
         }
 
-        log.debug("Custom regex filters: {}", customRegexFilters);
+        log.debug("Custom regex filters: {}", customRegexFilters.keySet());
     }
 
     // Lowercase entries of a list setting. They can be separated by commas, new lines or both, with or without
@@ -329,7 +331,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             // Show a broadcast we can't read, and say which one, instead of letting RuneLite log a full stack trace
             // for it on every chat refresh
-            log.warn("Couldn't check broadcast \"{}\", so it's shown: {}", message, e.toString());
+            log.debug("Couldn't check broadcast \"{}\", so it's shown: {}", message, e.toString());
             hide = false;
         }
 
@@ -1188,7 +1190,7 @@ public class GuildSpamFilterPlugin extends Plugin
         if (customRegexFilters.size() > 0)
         {
             String messageWithNormalSpaces = withNormalSpaces(message);
-            for (Pattern pattern : customRegexFilters)
+            for (Pattern pattern : customRegexFilters.values())
             {
                 if (pattern.matcher(messageWithNormalSpaces).find())
                 {

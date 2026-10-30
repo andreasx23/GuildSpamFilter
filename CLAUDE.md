@@ -38,7 +38,7 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Parsing:** `indexOf`/`substring`, not regex. Numbers are read with `readNumber`, which ignores commas, "coins"
   and punctuation and returns -1 instead of throwing. The rule is: if a filter is on and the broadcast can't be
   parsed, hide it. As a safety net, `onScriptCallbackEvent` catches any exception from the filters, shows that
-  broadcast and logs one warning quoting it.
+  broadcast and logs one debug line quoting it.
 - **Threads:** filtering runs on the client thread. `onConfigChanged` is called on the Swing thread, so it does its
   list updates inside `clientThread.invoke`, together with the chat refresh.
 - **Always-included players** (`isBroadcastMessageForPlayer`): the game writes spaces in names as non-breaking spaces,
@@ -47,7 +47,8 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Settings:** config group `GuildSpamFilterConfig.GROUP` (`"GuildSpamFilter"`). The list settings (personal
   bests, custom filters, always-included players) are read by `readList`, which splits on commas and new lines and
   trims spaces, so `a,b`, `a, b` and `a,\nb` are the same list. Custom regex filters are one per line instead, since
-  regular expressions contain commas; invalid ones are skipped with a warning. Custom filters, regex filters and
+  regular expressions contain commas; they're kept in a map keyed by the expression, since `Pattern` has no
+  `equals`, so repeated lines are dropped. Invalid ones are skipped and logged. Custom filters, regex filters and
   list entries treat non-breaking spaces as normal spaces (`withNormalSpaces`). The lists are cached and only
   reloaded in `onConfigChanged`, which matches on the settings' `keyName`s and ignores other plugins' groups. `startUp`,
   `shutDown` and `onConfigChanged` all call `client.refreshChat()` on the client thread, so existing chat is
@@ -81,8 +82,9 @@ All logic lives in `GuildSpamFilterPlugin`:
   name, `690` enum of item ids) → `client.getItemDefinition(id).getName()`. RuneLite has no named constants for these
   ids; they match the `collection-log` (evansloan) and `kill-clog` Hub plugins. Cache reads need the client thread
   and a loaded game, so `startUp` schedules `loadCollectionLog` with `clientThread.invoke(BooleanSupplier)`; returning
-  `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. In the real client it logs
-  `Loaded 1721 collection log items in 5 tabs, including 67 raid items` (September 2026).
+  `false` retries every tick until `GameState` reaches `LOGIN_SCREEN`. In the real client (with `--debug`) it
+  logs `Loaded 1738 collection log items in 5 tabs, including 84 raid items` (October 2026, after The Fractured
+  Archive added 17 raid items).
   `CollectionLogTab.lowercaseItemNames` is lowercase, and `filterCollectionLogByTab` compares lowercase item names
   and switches on the tab name constants in `CollectionLogTab` (`BOSSES`, `RAIDS`, `CLUES`, `MINIGAMES`, `OTHER`),
   which must match the game's tab names exactly. Always use the constants; test fakes deliberately spell the names
@@ -97,8 +99,10 @@ plus `MessageHandlingTest` and `CollectionLogHandlerTest`.
 - `FilterTestBase` injects mocks into the real plugin with Guice and calls `startUp()`. The config mock uses
   `CALLS_REAL_METHODS`, so every setting has its real default until stubbed. Both `clientThread.invoke` overloads
   run immediately, and `FakeCollectionLog` installs a small collection log using the real cache ids.
-- Because the plugin turns filter crashes into warnings, `FilterTestBase` fails any test that logs an unexpected
-  warning. A test that expects one calls `assertWarned(text)`.
+- `FilterTestBase` fails any test where the plugin logs above debug level, or logs one of the problem messages in
+  its `PROBLEMS` list (a filter crash, an invalid regex, an unknown collection log tab, no raid items) that the
+  test didn't expect. A test that expects one calls `assertLoggedProblem(text)`. Add new problem messages to
+  `PROBLEMS`.
 - `isHidden(message)` simulates the `chatFilterCheck` stacks. For the list settings use `setCustomFilters`,
   `setCustomRegexFilters`, `setAlwaysIncludedPlayers` or `setPersonalBestList`: they fire `ConfigChanged`, because
   stubbing the getter alone doesn't update the cached sets. `listsOf(a, b)` gives every separator a user might type.
@@ -181,9 +185,10 @@ real clan broadcasts can be read from them. Tests use these real lines (with the
 
 - Allman braces, 4-space indentation, standard Java naming (camelCase methods and fields, no `_` prefixes, no
   `Enum` suffix on types).
-- Logging uses SLF4J `{}` placeholders, never string concatenation. `info` is for once-per-session events (start,
-  stop, collection log loaded) and `warn` for problems that silently disable a filter. Per-broadcast logging is
-  `debug`: each broadcast is logged once as `Checking broadcast: …`, and a filter that hides it logs one
+- **Log only with `log.debug`**, never `info`, `warn` or `error`: the plugin's logs are only for `--debug`
+  sessions, and the tests fail on anything higher. Use SLF4J `{}` placeholders, never string concatenation.
+  Problems that silently disable a filter (see `PROBLEMS` in `FilterTestBase`) are debug lines too. Each broadcast
+  is logged once as `Checking broadcast: …`, and a filter that hides it logs one
   `Hiding … (<setting name as shown in the panel>: <value>)` line with the reason. A broadcast with no `Hiding` line
   was shown, so don't add "detected" lines.
 - Spell names out instead of abbreviating (`personalBestMode`, not `pbMode`; `alwaysIncludedPlayerNames`, not

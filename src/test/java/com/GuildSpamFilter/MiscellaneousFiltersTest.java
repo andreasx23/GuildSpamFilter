@@ -108,6 +108,16 @@ public class MiscellaneousFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void customFiltersIgnoreSpacesAroundEntries()
+    {
+        setCustomFilters("    Chambers of Xeric, Armadyl Godsword");
+
+        assertHidden("Biceps Btw has achieved a new Chambers of Xeric (Team Size: 3 players) personal best: 18:03");
+        assertHidden("Biceps Btw received a drop: Armadyl godsword (15,000,000 coins).");
+        assertShown(BICEPS_DROP);
+    }
+
+    @Test
     public void customFiltersMatchNamesWithNonBreakingSpaces()
     {
         setCustomFilters("Biceps Btw");
@@ -150,7 +160,7 @@ public class MiscellaneousFiltersTest extends FilterTestBase
     public void customRegexFiltersAreOnePerLineSoTheyCanContainCommas()
     {
         // Drops worth 1,000,000 to 9,999,999 coins, and every Vorkath personal best
-        setCustomRegexFilters("\\(\\d,\\d{3},\\d{3} coins\\)\r\n\n  Vorkath personal best  \n");
+        setCustomRegexFilters("\\(\\d,\\d{3},\\d{3} coins\\)\r\n\n    Vorkath personal best\t  \n");
 
         assertHidden(BICEPS_DROP);
         assertShown(TANZANITE_DROP_WORTH_40M);
@@ -162,7 +172,7 @@ public class MiscellaneousFiltersTest extends FilterTestBase
     {
         setCustomRegexFilters("(unclosed\nwhip");
 
-        assertWarned("Ignoring custom regex filter \"(unclosed\"");
+        assertLoggedProblem("Ignoring custom regex filter \"(unclosed\"");
         assertHidden(BICEPS_DROP);
     }
 
