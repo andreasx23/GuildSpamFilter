@@ -73,9 +73,10 @@ All logic lives in `GuildSpamFilterPlugin`:
   the pipeline, so when they're on, the high-alch value and threshold don't matter. The settings' tooltips describe all
   this, so keep them in sync. Since RuneLite 1.13.0, `getItemPrice` returns `long`.
 - **Loot parsing:** raid loot and regular drops share `readLoot`, which strips an `N x ` quantity and a trailing
-  `(N coins)` or `(very valuable)`, but keeps brackets that belong to the name (`(uncharged)`, `(e)`). Regular drops
-  use the broadcast's coin value; without one they fall back to the GE price found by exact name through
-  `ItemManager.search` (tradeable items only) times the quantity, and are hidden if that fails too. A threshold at
+  `(N coins)` or `(very valuable)`, but keeps brackets that belong to the name (`(uncharged)`, `(e)`). A
+  `from <boss>` after the value is stripped first. Regular drops use the broadcast's coin value; without one they
+  fall back to the GE price found by exact name through `ItemManager.search` (tradeable items only) times the
+  quantity, and are hidden if that fails too. A threshold at
   `Integer.MAX_VALUE` (the default) hides everything, including values above it (`isBelowThreshold`).
 - **Collection log:** `CollectionLogHandler.readData(client)` reads the game cache, the same data the in-game
   collection log uses: enum `2102` → tab structs (param `682` name, `683` enum of pages) → page structs (param `689`
@@ -116,6 +117,9 @@ real clan broadcasts can be read from them. Tests use these real lines (with the
 
 - **Drops and raid loot:**
   - `Biceps Btw received a drop: Viggora's chainmace (u) (3,950,787 coins).`
+  - `EricTonysson received a drop: 4 x Dragon platelegs (644,156 coins).`
+  - `Touch Hogs received a drop: Virtus robe top (29,728,557 coins) from The Leviathan.` (boss drops name the boss
+    after the value; seen November 2026)
   - `Biceps Btw received a rare drop: Magma mutagen` (no full stop; only seen in 2022)
   - `Corydonn received special loot from a raid: Kodai insignia (47,809,774 coins).`
   - `Biceps Btw received special loot from a raid: Archivist's folio (inert).` (no value)
@@ -138,6 +142,7 @@ real clan broadcasts can be read from them. Tests use these real lines (with the
   `Smallman26 has achieved a new The Fractured Archive (team size: 3) Normal mode Overall personal best: 30:28.20`,
   and without "has" or a full stop:
   `Kroghs achieved a new personal best deep delve at the Doom of Mokhaiotl: Level 28`
+- **Quests:** `alandouze has completed a quest: The Writing's on the Wall` (no full stop)
 - **Clan and other:** `MindMySnipe has expelled SuckUduck from the clan.` (never "kicked"),
   `Biceps Btw has died and lost their hardcore ironman status.`,
   `Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)` (no thousands separator in
@@ -149,7 +154,7 @@ real clan broadcasts can be read from them. Tests use these real lines (with the
 - **Also checked by the `better-clan-broadcasts` plugin:** `has completed a quest:`, `has a funny feeling like`,
   `has been invited into the clan by`, `has completed the <Tier> <Area> diary.`,
   `To talk in your clan's channel, start each line of chat with // or /c.`
-- **Not verified against a real broadcast:** pets, quest completions, achievement diaries and new members (tests
+- **Not verified against a real broadcast:** pets, achievement diaries and new members (tests
   use the wording above), and a rare drop newer than 2022.
 
 ## Plugin Hub and releases
@@ -191,6 +196,11 @@ real clan broadcasts can be read from them. Tests use these real lines (with the
   is logged once as `Checking broadcast: …`, and a filter that hides it logs one
   `Hiding … (<setting name as shown in the panel>: <value>)` line with the reason. A broadcast with no `Hiding` line
   was shown, so don't add "detected" lines.
+- Lowercase with `toLowerCase(Locale.ROOT)`, never plain `toLowerCase()`: the default locale is the player's
+  computer's, and in Turkish `"I".toLowerCase()` is a dotless `ı`, so "Infernal" would not match a custom filter
+  "infernal". Broadcast numbers always use commas whatever the locale, and `readNumber` ignores every non-digit, so
+  don't parse them with `NumberFormat`. `MessageHandlingTest.worksTheSameWithAnyLanguageOnThePlayersComputer` runs
+  under Danish and Turkish.
 - Spell names out instead of abbreviating (`personalBestMode`, not `pbMode`; `alwaysIncludedPlayerNames`, not
   `alwaysIncludedPlayerIgns`). The exceptions are the game terms the settings panel itself uses: XP, GP, PvM and PvP.
 - `.idea/` is tracked. IntelliJ rewrites `.idea/compiler.xml` and `.idea/misc.xml` (Lombok processor path, Java

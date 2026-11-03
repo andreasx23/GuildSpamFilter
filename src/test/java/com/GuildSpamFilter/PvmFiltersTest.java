@@ -329,6 +329,94 @@ public class PvmFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsDropsWithAQuantity()
+    {
+        when(config.filterRegularDrops()).thenReturn(true);
+        when(config.lootGpThreshold()).thenReturn(999_999);
+
+        // Seen in an in-game screenshot, November 2026
+        assertShown("EricTonysson received a drop: 3,080 x Sunfire splinters (1,037,960 coins).");
+        assertShown("EricTonysson received a drop: 130 x Onyx bolts (1,081,860 coins).");
+        assertHidden("EricTonysson received a drop: 4 x Dragon platelegs (644,156 coins).");
+    }
+
+    @Test
+    public void readsDropsThatNameTheBoss()
+    {
+        // Seen in an in-game screenshot, November 2026: boss drops end with "from <boss>"
+        String virtusDrop = "Touch Hogs received a drop: Virtus robe top (29,728,557 coins) from The Leviathan.";
+        when(config.filterRegularDrops()).thenReturn(true);
+
+        when(config.lootGpThreshold()).thenReturn(999_999);
+        assertShown(virtusDrop);
+
+        when(config.lootGpThreshold()).thenReturn(30_000_000);
+        assertHidden(virtusDrop);
+    }
+
+    @Test
+    public void readsDropsFromBossesWithBracketsInTheirName()
+    {
+        // Made up, in case a boss is ever named with brackets like an item variant
+        String virtusDrop = "Touch Hogs received a drop: Virtus robe top (29,728,557 coins) from The Leviathan (Alpha).";
+        when(config.filterRegularDrops()).thenReturn(true);
+
+        when(config.lootGpThreshold()).thenReturn(999_999);
+        assertShown(virtusDrop);
+        assertShown("Biceps Btw received a drop: 10 x Onyx bolts (e) (1,234,567 coins) from The Leviathan (Alpha).");
+
+        when(config.lootGpThreshold()).thenReturn(30_000_000);
+        assertHidden(virtusDrop);
+    }
+
+    @Test
+    public void readsDropsWithBracketsInTheNameThatNameTheBoss()
+    {
+        when(config.filterRegularDrops()).thenReturn(true);
+
+        when(config.lootGpThreshold()).thenReturn(1_000_000);
+        assertShown("Biceps Btw received a drop: SomeDrop (uncut) (1,234,567 coins) from Zulrah");
+        assertShown("Biceps Btw received a drop: SomeDrop (uncut) (1,234,567 coins) from Zulrah.");
+        assertShown("Biceps Btw received a drop: 2 x SomeDrop (uncut) (1,234,567 coins) from Zulrah.");
+
+        when(config.lootGpThreshold()).thenReturn(2_000_000);
+        assertHidden("Biceps Btw received a drop: SomeDrop (uncut) (1,234,567 coins) from Zulrah");
+        assertHidden("Biceps Btw received a drop: SomeDrop (uncut) (1,234,567 coins) from Zulrah.");
+    }
+
+    @Test
+    public void usesTheGrandExchangePriceForVeryValuableDropsWithBracketsInTheNameThatNameTheBoss()
+    {
+        // Only found if "(uncut)" is kept as part of the item name
+        setTradeablePrice(1, "SomeDrop (uncut)", 1_234_567L);
+        when(config.filterRegularDrops()).thenReturn(true);
+        when(config.lootGpThreshold()).thenReturn(1_000_000);
+
+        assertShown("Biceps Btw received a drop: SomeDrop (uncut) (very valuable) from Zulrah");
+        assertHidden("Biceps Btw received a drop: SomeDrop (very valuable) from Zulrah");
+    }
+
+    @Test
+    public void usesTheGrandExchangePriceForVeryValuableDropsFromBossesWithBracketsInTheirName()
+    {
+        setTradeablePrice(27238, "Virtus robe top", 29_728_557L);
+        when(config.filterRegularDrops()).thenReturn(true);
+        when(config.lootGpThreshold()).thenReturn(999_999);
+
+        assertShown("Touch Hogs received a drop: Virtus robe top (very valuable) from The Leviathan (Alpha).");
+    }
+
+    @Test
+    public void usesTheGrandExchangePriceForVeryValuableDropsThatNameTheBoss()
+    {
+        setTradeablePrice(27238, "Virtus robe top", 29_728_557L);
+        when(config.filterRegularDrops()).thenReturn(true);
+        when(config.lootGpThreshold()).thenReturn(999_999);
+
+        assertShown("Touch Hogs received a drop: Virtus robe top (very valuable) from The Leviathan.");
+    }
+
+    @Test
     public void usesTheGrandExchangePriceForVeryValuableDrops()
     {
         // Raid loot has been broadcast as "(very valuable)" instead of a coin value, so drops might be too
