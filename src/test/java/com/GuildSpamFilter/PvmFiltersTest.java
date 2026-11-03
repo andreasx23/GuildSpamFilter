@@ -149,6 +149,19 @@ public class PvmFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsRaidLootWithDotsAsThousandsSeparators()
+    {
+        // Real broadcasts use commas, but the parser accepts dots in case that changes
+        when(config.filterRaidDrop()).thenReturn(true);
+        when(config.raidLootGpThreshold()).thenReturn(20_000_000);
+
+        // Ascension shards are worth 10,000 each. If the quantity weren't read, the item wouldn't be found on the
+        // Raids tab and the loot would be shown
+        assertHidden("Biceps Btw received special loot from a raid: 1.000 x Ascension shards (very valuable).");
+        assertShown("Biceps Btw received special loot from a raid: 2.500 x Ascension shards (very valuable).");
+    }
+
+    @Test
     public void keepsBracketsThatArePartOfARaidItemName()
     {
         setPrice("Archivist's folio (inert)", 50_000_000L);
@@ -338,6 +351,22 @@ public class PvmFiltersTest extends FilterTestBase
         assertShown("EricTonysson received a drop: 3,080 x Sunfire splinters (1,037,960 coins).");
         assertShown("EricTonysson received a drop: 130 x Onyx bolts (1,081,860 coins).");
         assertHidden("EricTonysson received a drop: 4 x Dragon platelegs (644,156 coins).");
+    }
+
+    @Test
+    public void readsDropsWithDotsAsThousandsSeparators()
+    {
+        // Real broadcasts use commas, but the parser accepts dots in case that changes
+        setTradeablePrice(536, "Dragon bones", 2_500L);
+        when(config.filterRegularDrops()).thenReturn(true);
+        when(config.lootGpThreshold()).thenReturn(999_999);
+
+        assertShown("EricTonysson received a drop: 3.080 x Sunfire splinters (1.037.960 coins).");
+        assertHidden("EricTonysson received a drop: 4 x Dragon platelegs (644.156 coins).");
+        assertShown("Touch Hogs received a drop: Virtus robe top (29.728.557 coins) from The Leviathan.");
+        assertShown("Biceps Btw received a drop: SomeDrop (uncut) (1.234.567 coins) from Zulrah");
+        // The quantity must be read for the Grand Exchange price to be multiplied by it
+        assertShown("Biceps Btw received a drop: 1.000 x Dragon bones (very valuable).");
     }
 
     @Test

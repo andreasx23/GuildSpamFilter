@@ -101,6 +101,10 @@ public class CollectionLogFiltersTest extends FilterTestBase
 
         // Copied from an in-game screenshot: slot counts have no thousands separator
         assertHidden("Biceps Btw received a new collection log item: Viggora's chainmace (u) (1114/1717)");
+        // In case the game ever adds a thousands separator
+        assertHidden("Biceps Btw received a new collection log item: Viggora's chainmace (u) (1.114/1.717)");
+        assertShown("Biceps Btw received a new collection log item: Viggora's chainmace (u) (1.214/1.717)");
+        assertShown("Biceps Btw received a new collection log item: Viggora's chainmace (u) (1,214/1,717)");
     }
 
     @Test

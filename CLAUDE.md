@@ -35,9 +35,10 @@ All logic lives in `GuildSpamFilterPlugin`:
 - **Pipeline:** `shouldFilterMessage` strips a leading `<img=N>` and anything up to the first `|`, checks the
   always-included players first, then ORs the `filterX` methods; the first match hides the message. The Leagues
   filter looks at the raw message for `<img=22>`.
-- **Parsing:** `indexOf`/`substring`, not regex. Numbers are read with `readNumber`, which ignores commas, "coins"
-  and punctuation and returns -1 instead of throwing. The rule is: if a filter is on and the broadcast can't be
-  parsed, hide it. As a safety net, `onScriptCallbackEvent` catches any exception from the filters, shows that
+- **Parsing:** `indexOf`/`substring`, not regex. Numbers are read with `readNumber`, which keeps only the digits
+  (so `2,000,000` and `2.000.000` both work, in case Jagex ever switches to dots), ignoring "coins" and punctuation,
+  and returns -1 instead of throwing. The `N x` quantity check in `readLoot` accepts both separators too. The rule
+  is: if a filter is on and the broadcast can't be parsed, hide it. As a safety net, `onScriptCallbackEvent` catches any exception from the filters, shows that
   broadcast and logs one debug line quoting it.
 - **Threads:** filtering runs on the client thread. `onConfigChanged` is called on the Swing thread, so it does its
   list updates inside `clientThread.invoke`, together with the chat refresh.
@@ -198,8 +199,8 @@ real clan broadcasts can be read from them. Tests use these real lines (with the
   was shown, so don't add "detected" lines.
 - Lowercase with `toLowerCase(Locale.ROOT)`, never plain `toLowerCase()`: the default locale is the player's
   computer's, and in Turkish `"I".toLowerCase()` is a dotless `ı`, so "Infernal" would not match a custom filter
-  "infernal". Broadcast numbers always use commas whatever the locale, and `readNumber` ignores every non-digit, so
-  don't parse them with `NumberFormat`. `MessageHandlingTest.worksTheSameWithAnyLanguageOnThePlayersComputer` runs
+  "infernal". Broadcast numbers use commas whatever the locale, and `readNumber` ignores every non-digit, so don't
+  parse them with `NumberFormat`. `MessageHandlingTest.worksTheSameWithAnyLanguageOnThePlayersComputer` runs
   under Danish and Turkish.
 - Spell names out instead of abbreviating (`personalBestMode`, not `pbMode`; `alwaysIncludedPlayerNames`, not
   `alwaysIncludedPlayerIgns`). The exceptions are the game terms the settings panel itself uses: XP, GP, PvM and PvP.

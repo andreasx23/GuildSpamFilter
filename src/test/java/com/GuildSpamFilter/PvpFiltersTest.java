@@ -55,6 +55,21 @@ public class PvpFiltersTest extends FilterTestBase
     }
 
     @Test
+    public void readsLootWithDotsAsThousandsSeparators()
+    {
+        // Real broadcasts use commas, but the parser accepts dots in case that changes
+        when(config.filterPlayerKill()).thenReturn(true);
+        when(config.playerKillThreshold()).thenReturn(10_000_000);
+        when(config.filterPlayerDied()).thenReturn(true);
+        when(config.playerDiedThreshold()).thenReturn(1_000_000);
+
+        assertShown("Crunch704 has defeated dahlinho and received (27.735.720 coins) worth of loot!");
+        assertHidden("notredame47 has defeated II RAJPUT II and received (6.268.574 coins) worth of loot!");
+        assertShown("Biceps Btw has been defeated by Store Biceps in The Wilderness and lost (1.234.567 coins) worth of loot.");
+        assertHidden("CyborgC7pher has been defeated by tom is bald in The Wilderness and lost (316.298 coins) worth of loot.");
+    }
+
+    @Test
     public void hidesPlayerDeathsWithoutLoot()
     {
         when(config.filterPlayerDied()).thenReturn(true);

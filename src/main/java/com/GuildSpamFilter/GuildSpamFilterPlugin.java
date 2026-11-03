@@ -612,8 +612,9 @@ public class GuildSpamFilterPlugin extends Plugin
             bracketIndex = itemPart.lastIndexOf("(");
         }
 
+        // "3,080 x Sunfire splinters", or "3.080 x" in case the game ever uses dots as thousands separators
         int quantityIndex = itemPart.indexOf(" x ");
-        if (quantityIndex != -1 && itemPart.substring(0, quantityIndex).matches("\\d[\\d,]*"))
+        if (quantityIndex != -1 && itemPart.substring(0, quantityIndex).matches("\\d[\\d,.]*"))
         {
             loot.quantity = readNumber(itemPart.substring(0, quantityIndex));
             itemPart = itemPart.substring(quantityIndex + 3).trim();
@@ -1163,7 +1164,8 @@ public class GuildSpamFilterPlugin extends Plugin
         return -1;
     }
 
-    // Reads the number in text, ignoring commas and anything else around it. Returns -1 if there's no number.
+    // Reads the number in text, ignoring thousands separators (commas, or dots in case the game ever changes) and
+    // anything else around it. Returns -1 if there's no number.
     private static long readNumber(String text)
     {
         String digits = text.replaceAll("[^0-9]", "");
