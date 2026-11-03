@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -144,7 +145,7 @@ public class GuildSpamFilterPlugin extends Plugin
                 {
                     for (CollectionLogItem item : page.items)
                     {
-                        raidItemIds.putIfAbsent(item.name.toLowerCase(), item.id);
+                        raidItemIds.putIfAbsent(item.name.toLowerCase(Locale.ROOT), item.id);
                     }
                 }
             }
@@ -212,7 +213,7 @@ public class GuildSpamFilterPlugin extends Plugin
         for (String value : text.split("[,\\r\\n]"))
         {
             value = withNormalSpaces(value).trim()
-                                           .toLowerCase();
+                                           .toLowerCase(Locale.ROOT);
             if (value.length() > 0)
             {
                 values.add(value);
@@ -387,7 +388,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (alwaysIncludedPlayerNames.size() > 0)
         {
-            String lowercaseBroadcastMessage = message.toLowerCase();
+            String lowercaseBroadcastMessage = message.toLowerCase(Locale.ROOT);
             for (String playerName : alwaysIncludedPlayerNames)
             {
                 if (isBroadcastMessageForPlayer(playerName, lowercaseBroadcastMessage))
@@ -418,7 +419,7 @@ public class GuildSpamFilterPlugin extends Plugin
         {
             // Only the part after the player's name, so a name like "Vorkath Fan" doesn't match the list
             String partWithoutPlayerName = message.substring(message.indexOf("achieved a new"));
-            String lowercaseMessage = partWithoutPlayerName.toLowerCase();
+            String lowercaseMessage = partWithoutPlayerName.toLowerCase(Locale.ROOT);
 
             switch (config.personalBestMode())
             {
@@ -498,7 +499,7 @@ public class GuildSpamFilterPlugin extends Plugin
         if (config.filterUntradeableRaidLoot() && message.contains(RAID_LOOT_TEXT))
         {
             Loot loot = readLoot(message);
-            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase());
+            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase(Locale.ROOT));
             if (itemId != null && !itemManager.getItemComposition(itemId).isTradeable())
             {
                 log.debug("Hiding untradeable raid loot {}", loot.itemName);
@@ -514,7 +515,7 @@ public class GuildSpamFilterPlugin extends Plugin
         if (config.filterRaidDrop() && message.contains(RAID_LOOT_TEXT))
         {
             Loot loot = readLoot(message);
-            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase());
+            Integer itemId = raidItemIds.get(loot.itemName.toLowerCase(Locale.ROOT));
             boolean isCabbage = loot.itemName.equalsIgnoreCase(CABBAGE);
             if (itemId == null && !isCabbage)
             {
@@ -574,8 +575,8 @@ public class GuildSpamFilterPlugin extends Plugin
     }
 
     // Reads raid loot and drop broadcasts. The game has used several formats:
-    // "...received a drop: Viggora's chainmace (u) (3,950,787 coins).", "...from a raid: 884 x Iron ore (very valuable)."
-    // and "...from a raid: Cabbage."
+    // "...received a drop: Viggora's chainmace (u) (3,950,787 coins).", "...from a raid: 884 x Iron ore (very valuable).",
+    // "...from a raid: Cabbage." and "...received a drop: Virtus robe top (29,728,557 coins) from The Leviathan."
     private static Loot readLoot(String message)
     {
         Loot loot = new Loot();
@@ -583,6 +584,13 @@ public class GuildSpamFilterPlugin extends Plugin
         if (itemPart.endsWith("."))
         {
             itemPart = itemPart.substring(0, itemPart.length() - 1).trim();
+        }
+
+        // Boss drops name the source after the value: "...: Virtus robe top (29,728,557 coins) from The Leviathan."
+        int sourceIndex = itemPart.lastIndexOf(") from ");
+        if (sourceIndex != -1)
+        {
+            itemPart = itemPart.substring(0, sourceIndex + 1);
         }
 
         // Remove the value the game adds after the item name, but keep brackets that are part of the name,
@@ -604,8 +612,9 @@ public class GuildSpamFilterPlugin extends Plugin
             bracketIndex = itemPart.lastIndexOf("(");
         }
 
+        // "3,080 x Sunfire splinters", or "3.080 x" in case the game ever uses dots as thousands separators
         int quantityIndex = itemPart.indexOf(" x ");
-        if (quantityIndex != -1 && itemPart.substring(0, quantityIndex).matches("\\d[\\d,]*"))
+        if (quantityIndex != -1 && itemPart.substring(0, quantityIndex).matches("\\d[\\d,.]*"))
         {
             loot.quantity = readNumber(itemPart.substring(0, quantityIndex));
             itemPart = itemPart.substring(quantityIndex + 3).trim();
@@ -818,7 +827,7 @@ public class GuildSpamFilterPlugin extends Plugin
         int index2 = message.lastIndexOf("(");
         String itemName = message.substring(index, index2)
                                  .trim();
-        String lowercaseItemName = itemName.toLowerCase();
+        String lowercaseItemName = itemName.toLowerCase(Locale.ROOT);
 
         for (CollectionLogTab tab : collectionLogTabs)
         {
@@ -1155,7 +1164,8 @@ public class GuildSpamFilterPlugin extends Plugin
         return -1;
     }
 
-    // Reads the number in text, ignoring commas and anything else around it. Returns -1 if there's no number.
+    // Reads the number in text, ignoring thousands separators (commas, or dots in case the game ever changes) and
+    // anything else around it. Returns -1 if there's no number.
     private static long readNumber(String text)
     {
         String digits = text.replaceAll("[^0-9]", "");
@@ -1171,7 +1181,7 @@ public class GuildSpamFilterPlugin extends Plugin
     {
         if (customFilters.size() > 0)
         {
-            String lowercaseMessage = withNormalSpaces(message).toLowerCase();
+            String lowercaseMessage = withNormalSpaces(message).toLowerCase(Locale.ROOT);
             for (String text : customFilters)
             {
                 if (lowercaseMessage.contains(text))

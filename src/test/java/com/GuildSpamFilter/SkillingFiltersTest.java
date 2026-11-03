@@ -94,6 +94,19 @@ public class SkillingFiltersTest extends FilterTestBase
 
         assertHidden("Biceps Btw has reached a total level of 1,900.");
         assertShown("Biceps Btw has reached a total level of 2,000.");
+        assertHidden("Biceps Btw has reached a total level of 1.900.");
+        assertShown("Biceps Btw has reached a total level of 2.000.");
+    }
+
+    @Test
+    public void readsXpMilestonesWithDotsAsThousandsSeparators()
+    {
+        // Real broadcasts use commas, but the parser accepts dots in case that changes
+        when(config.filterXpMilestone()).thenReturn(true);
+        when(config.xpMilestoneThreshold()).thenReturn(50_000_000);
+
+        assertHidden("Snorhax has reached 15.000.000 XP in Firemaking.");
+        assertShown("Snorhax has reached 95.000.000 XP in Firemaking.");
     }
 
     @Test

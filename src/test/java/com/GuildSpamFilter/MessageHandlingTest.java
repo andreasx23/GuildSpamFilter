@@ -5,6 +5,8 @@ import net.runelite.api.events.ScriptCallbackEvent;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Locale;
+
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -131,6 +133,39 @@ public class MessageHandlingTest extends FilterTestBase
 
         assertShown(WHIP_DROP);
         assertLoggedProblem("Couldn't check broadcast \"" + WHIP_DROP + "\"");
+    }
+
+    @Test
+    public void worksTheSameWithAnyLanguageOnThePlayersComputer()
+    {
+        // Danish, and Turkish, where "I".toLowerCase() is a dotless "ı" unless Locale.ROOT is used
+        for (Locale locale : new Locale[] { new Locale("da", "DK"), new Locale("tr", "TR") })
+        {
+            Locale defaultLocale = Locale.getDefault();
+            Locale.setDefault(locale);
+            try
+            {
+                when(config.filterRegularDrops()).thenReturn(true);
+                when(config.lootGpThreshold()).thenReturn(1_000_000);
+                setCustomFilters("infernal cape");
+                setCustomRegexFilters("^imbued");
+                setAlwaysIncludedPlayers("iron timpvm");
+                when(config.filterPersonalBests()).thenReturn(true);
+                setPersonalBestList("inferno");
+
+                assertHidden("Biceps Btw has a funny feeling like they're being followed: Infernal cape.");
+                assertHidden("Imbued heart broadcast");
+                assertShown("Iron TimPvm received a drop: Dragon bones (2,500 coins).");
+                assertShown("Biceps Btw has achieved a new Inferno personal best: 55:12");
+                // The game always writes numbers with commas, whatever the computer's language
+                assertShown(WHIP_DROP);
+                assertHidden("Biceps Btw received a drop: Dragon bones (2,500 coins).");
+            }
+            finally
+            {
+                Locale.setDefault(defaultLocale);
+            }
+        }
     }
 
     private void assertChatWasRefilteredOnTheClientThread()

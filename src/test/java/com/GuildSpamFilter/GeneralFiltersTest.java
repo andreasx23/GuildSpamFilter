@@ -140,6 +140,8 @@ public class GeneralFiltersTest extends FilterTestBase
         when(config.filterQuestComplete()).thenReturn(true);
 
         assertHidden("Biceps Btw has completed a quest: Dragon Slayer II");
+        // Seen in an in-game screenshot, November 2026: no full stop
+        assertHidden("alandouze has completed a quest: The Writing's on the Wall");
     }
 
     @Test

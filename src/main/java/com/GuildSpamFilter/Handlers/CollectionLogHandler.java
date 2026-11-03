@@ -7,6 +7,7 @@ import net.runelite.api.Client;
 import net.runelite.api.StructComposition;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 /*
    Reads the collection log from the game's own cache, the same data the in-game collection log is built from:
@@ -41,7 +42,7 @@ public class CollectionLogHandler
                 {
                     String itemName = client.getItemDefinition(itemId).getName();
                     page.items.add(new CollectionLogItem(itemId, itemName));
-                    tab.lowercaseItemNames.add(itemName.toLowerCase());
+                    tab.lowercaseItemNames.add(itemName.toLowerCase(Locale.ROOT));
                 }
 
                 tab.pages.add(page);
